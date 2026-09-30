@@ -27,11 +27,19 @@ A and B run **in parallel** (no shared code). C bridges. E last.
 ## Phases, gates, definition of done
 
 ### P0 — Parity freeze (WS A, ~1–2 sessions)
+**HARD GATE FIRST — owner condition (2026-09-30): calc parity.** Calculations
+derived fresh (no SignalForge code): `backend/core/exposure.py` from scratch +
+capture harness + acceptance metrics from `docs/skylit-value-model.md`
+(king-strike ±10pt ≥ 85%, top6 ≥ 5/6 on ≥ 80% of ≥ 20 session-days, owner
+signs "nodes look the same"). Nothing else in the project starts until this
+passes. Closest known model: BSγ × call/put × ask/bid flip × (vol+0.5·OI) —
+73% king-strike today; gap closed via temporal features + API replay calibration.
 Work: resolve checklist rows 🔍/📝 for heatmap: cell detail panel component
 spec, movement-filter semantics, hover RAW HOVER, normalization constants fit,
 node tier names; one intraday side-by-side session (live skylit vs demo).
-- **DoD:** heatmap checklist = 0 open 🔍; owner signs "heatmap parity locked".
-- Deliverable: demo v4 (heatmap only, pixel-honest) + updated checklist.
+- **DoD:** calc-parity gate signed by owner + heatmap checklist = 0 open 🔍.
+- Deliverable: `exposure.py` + verification report + demo v4 (heatmap only,
+  pixel-honest) + updated checklist.
 
 ### P1 — Foundations (WS B, parallel with P0)
 Work: `backend/core` (config/errors/logging/db), `db/migrations/0001`

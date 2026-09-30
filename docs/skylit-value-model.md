@@ -64,7 +64,38 @@ history) over ~20 sessions via 1s replay frames → fit a **dynamic model**
 (temporal features) to their values as target → keep only the behavioral
 kernel (how nodes attract/repel) in our own value layer, own weights.
 
-## Product stance (locked)
+## Verdict 3 — variant sweep, fresh code (2026-09-30, 23 pairs)
+
+`SignalForge/scripts/skylit_variant_sweep.py` (own RE implementation — no code
+carried over): swept 20 structural variants (sign convention × gamma source ×
+size term). Best family:
+
+| model | king exact | king ±25pt | top6 strikes | rho |
+|---|---|---|---|---|
+| **bs_cpflip_voloi** (BSγ × ±1call/put × flip(ask>bid) × (vol+0.5·OI)) | **8/22 (36%)** | **16/22 (73%)** | 0.39 | −0.035 |
+| bs_cpflip_vol | 8/22 | 16/22 | 0.37 | −0.034 |
+| uw_cpflip_oi | 7/22 | 14/22 | 0.32 | −0.004 |
+
+- **Nodes of interest: converging.** 73% of captures our king lands within 25
+  SPX points of theirs; exact-cell 36%. Top6 strike zone ~40%.
+- Sign convention that works = **customer-buy flip AND call/put sign** (the
+  0924 recovery missed the call/put term — our sweep found it).
+- Rank-order rho still weak → their within-grid normalization layer remains
+  theirs; but NODE LOCATION (what the user cares about) is close.
+- Remaining gap (27% king misses) is the dynamic state — see calibration path.
+
+## Owner confidence gate (2026-09-30, hard)
+
+"Calculations NOT copied from SignalForge — derived fresh, verified against
+Skylit; once UW data → same nodes of interest as Skylit is proven, the project
+starts." Encoded in Ultraphase P0 as the **calc-parity gate**:
+
+1. `backend/core/exposure.py` written from scratch in gammasummit (formula as
+   RE knowledge only; own code, own tests).
+2. Continuous capture harness (pairs + our full feature state incl. history).
+3. Acceptance metrics: king-strike hit (±10 pts) ≥ 85%, top6 strike overlap
+   ≥ 5/6 on ≥ 80% of captures, verified on ≥ 20 fresh session-days — owner
+   signs off "nodes look the same" before P1/P2 build.
 
 - Visual system + behaviors: 1:1 parity (achievable — measured).
 - Value layer: **ours** — gross-gamma surface + flow-directionalized adjustment
