@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GammaSummit — Architecture Demo v2</title>
+<style>
+  :root {
+    --bg:#0a0d12; --panel:#10141b; --head:#151a22; --border:#222a36;
+    --text:#dfe6ee; --muted:#8b98a8; --dim:#5c6b7c;
+    --green:#2fd158; --red:#f0464b; --amber:#f2b134; --blue:#3d7bfd; --violet:#8b5cf6;
+    --mono:"SF Mono",ui-monospace,Menlo,monospace;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font:12px/1.45 Inter,-apple-system,"Segoe UI",sans-serif; display:grid; grid-template-columns:196px 1fr; height:100vh; overflow:hidden; }
+  .num { font-family:var(--mono); font-variant-numeric:tabular-nums; }
+
+  /* ── sidebar ── */
+  aside { background:#0c1017; border-right:1px solid var(--border); display:flex; flex-direction:column; overflow-y:auto; }
+  .brand { padding:14px 14px 10px; font-weight:800; letter-spacing:2px; font-size:13px; }
+  .brand span { color:var(--amber); }
+  .navgroup { padding:10px 14px 3px; color:var(--dim); font-size:9.5px; font-weight:700; letter-spacing:1.5px; }
+  .navitem { padding:5px 16px; color:var(--muted); cursor:pointer; display:flex; justify-content:space-between; }
+  .navitem:hover { background:rgba(61,123,253,.08); color:var(--text); }
+  .navitem.active { background:rgba(61,123,253,.14); color:#fff; border-left:2px solid var(--blue); padding-left:14px; }
+  .navitem .tag { font-size:9px; color:var(--dim); }
+  .userbox { margin-top:auto; padding:10px 14px; border-top:1px solid var(--border); display:flex; align-items:center; gap:8px; color:var(--muted); }
+  .avatar { width:22px; height:22px; border-radius:50%; background:var(--violet); display:flex; align-items:center; justify-content:center; font-size:10px; color:#fff; font-weight:700; }
+
+  /* ── top bar ── */
+  main { display:flex; flex-direction:column; overflow:hidden; }
+  header { display:flex; align-items:center; gap:12px; padding:8px 14px; background:var(--head); border-bottom:1px solid var(--border); }
+  .tselect { display:flex; align-items:center; gap:8px; background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:4px 10px; color:var(--muted); cursor:pointer; }
+  .kbd { border:1px solid var(--border); border-radius:4px; padding:0 5px; font-size:10px; font-family:var(--mono); color:var(--dim); }
+  .sym { font-family:var(--mono); font-size:16px; font-weight:800; }
+  .seg { display:flex; background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:2px; }
+  .seg div { padding:3px 12px; border-radius:4px; font-size:10.5px; font-weight:700; letter-spacing:.5px; color:var(--dim); cursor:pointer; }
+  .seg div.on { background:var(--blue); color:#fff; }
+  .price { display:flex; align-items:baseline; gap:8px; font-family:var(--mono); }
+  .price .p { font-size:15px; font-weight:700; }
+  .price .c { font-size:11px; }
+  .tf { margin-left:auto; display:flex; gap:3px; }
+  .tf div { padding:3px 9px; border-radius:4px; font-family:var(--mono); font-size:10px; color:var(--dim); cursor:pointer; }
+  .tf div.on { background:var(--panel); color:var(--amber); border:1px solid var(--border); }
+
+  /* ── workspace ── */
+  .work { flex:1; display:grid; grid-template-columns: 1.6fr 1fr; grid-template-rows: 1fr 190px 26px; overflow:hidden; }
+  .panel { border-right:1px solid var(--border); border-bottom:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
+  .phead { display:flex; align-items:center; gap:8px; padding:6px 12px; background:var(--head); border-bottom:1px solid var(--border); }
+  .ptitle { font-size:10px; font-weight:800; letter-spacing:1.5px; }
+  .psub { color:var(--dim); font-size:10px; }
+  .badge { margin-left:auto; font-size:9px; font-family:var(--mono); border:1px solid var(--border); border-radius:4px; padding:1px 7px; color:var(--muted); }
+  .badge.live { color:var(--green); border-color:var(--green); }
+
+  /* matrix */
+  .mwrap { flex:1; overflow:auto; }
+  table { border-collapse:collapse; width:100%; }
+  thead th { position:sticky; top:0; z-index:2; background:var(--head); color:var(--dim); font-size:10px; letter-spacing:.5px; padding:6px 10px; text-align:right; font-weight:600; }
+  thead th:first-child { text-align:center; }
+  tbody td { padding:4px 10px; text-align:right; font-family:var(--mono); font-size:11px; border-top:1px solid rgba(34,42,54,.55); white-space:nowrap; }
+  td.k { text-align:center; font-weight:700; background:var(--panel); position:sticky; left:0; }
+  tbody tr:hover td { background:rgba(61,123,253,.06); }
+  tbody tr:hover td.k { background:#182231; }
+  .pos { color:var(--green); } .neg { color:var(--red); }
+  .big { font-weight:700; }
+
+  /* flow */
+  .fwrap { grid-column: 1 / 2; overflow:auto; }
+  .fwrap thead th { font-size:9px; padding:5px 8px; }
+  .fwrap tbody td { font-size:10px; padding:3px 8px; }
+  .side-ask { color:var(--green); } .side-bid { color:var(--red); } .side-mid { color:var(--amber); }
+  .cp-c { color:var(--green); font-weight:700; } .cp-p { color:var(--red); font-weight:700; }
+
+  /* ai canvas */
+  .ai { grid-column: 2 / 3; grid-row: 1 / 3; border-right:none; }
+  .aibody { padding:10px 12px; overflow-y:auto; flex:1; }
+  .chips { display:flex; gap:6px; flex-wrap:wrap; margin:6px 0 10px; }
+  .chip { border:1px solid var(--border); border-radius:99px; padding:2px 10px; color:var(--muted); font-size:10px; cursor:pointer; }
+  .chip:hover { border-color:var(--blue); color:var(--text); }
+  .regime { padding:5px 10px; border-radius:6px; font-weight:800; letter-spacing:1px; font-size:10px; margin:4px 0 8px; }
+  .reg-squeeze { background:rgba(240,70,75,.12); border:1px solid var(--red); color:var(--red); }
+  .thesis { color:var(--muted); font-size:11px; line-height:1.6; }
+  .thesis b { color:var(--text); }
+  .canvasstep { border-left:2px solid var(--border); padding:4px 10px; margin:6px 0; color:var(--dim); font-size:10px; }
+  .canvasstep.done { border-color:var(--green); color:var(--muted); }
+  .prompt { display:flex; margin-top:8px; }
+  .prompt input { flex:1; background:var(--panel); border:1px solid var(--border); border-radius:6px 0 0 6px; padding:6px 10px; color:var(--text); font-size:11px; outline:none; }
+  .prompt button { background:var(--blue); border:none; color:#fff; padding:0 14px; border-radius:0 6px 6px 0; font-size:11px; cursor:pointer; }
+
+  /* footer */
+  footer { grid-column: 1 / 3; background:#0c1017; border-top:1px solid var(--border); display:flex; align-items:center; gap:18px; padding:0 14px; color:var(--dim); font-size:10px; font-family:var(--mono); }
+  footer .dot { color:var(--green); }
+</style>
+</head>
+<body>
+
+<aside>
+  <div class="brand">GAMMA<span>SUMMIT</span></div>
+  <div class="navgroup">HOME</div>
+  <div class="navitem active">DASHBOARD</div>
+  <div class="navitem">CHARTS <span class="tag">v2</span></div>
+  <div class="navitem">ALERTS <span class="tag">v2</span></div>
+  <div class="navgroup">GAMMA</div>
+  <div class="navitem">HEATMAP</div>
+  <div class="navitem">EXPOSURE</div>
+  <div class="navitem">NODES</div>
+  <div class="navitem">REPLAY <span class="tag">v2</span></div>
+  <div class="navgroup">FLOW</div>
+  <div class="navitem">LIVE FEED</div>
+  <div class="navitem">DARK FEED</div>
+  <div class="navitem">SCANNER <span class="tag">v2</span></div>
+  <div class="navgroup">AI</div>
+  <div class="navitem">ANALYST</div>
+  <div class="navitem">IDEAS <span class="tag">v2</span></div>
+  <div class="userbox"><div class="avatar">D</div> demo-user · settings</div>
+</aside>
+
+<main>
+  <header>
+    <div class="tselect">All Tickers <span class="num" style="color:var(--dim)">609</span> <span class="kbd">⌘K</span></div>
+    <div class="sym">SPY</div>
+    <div class="seg"><div class="on">GEX</div><div>VEX</div><div>SPXW</div></div>
+    <div class="price"><span class="p">671.24</span><span class="c neg">-1.56 (-0.23%)</span></div>
+    <div class="tf"><div class="on">All</div><div>1m</div><div>5m</div><div>1D</div></div>
+  </header>
+
+  <div class="work">
+
+    <!-- primary: strike x expiry matrix -->
+    <div class="panel">
+      <div class="phead">
+        <div class="ptitle">GEX MATRIX</div>
+        <div class="psub">strike × expiry · net $ · descending</div>
+        <div class="badge">T1 · 5-min buckets</div>
+        <div class="badge live">● LIVE</div>
+      </div>
+      <div class="mwrap">
+        <table>
+          <thead><tr>
+            <th>STRIKE</th>
+            <th>2026-10-01</th><th>2026-10-02</th><th>2026-10-03</th>
+            <th>2026-10-06</th><th>2026-10-17</th><th>2026-11-21</th>
+          </tr></thead>
+          <tbody id="matrix"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ai canvas -->
+    <div class="panel ai">
+      <div class="phead">
+        <div class="ptitle">AI ANALYST</div>
+        <div class="psub">canvas builds as you ask</div>
+        <div class="badge">/ai/analyze · SSE</div>
+      </div>
+      <div class="aibody">
+        <div class="chips">
+          <div class="chip">What is a king node?</div>
+          <div class="chip">Read SPY structure</div>
+          <div class="chip">Where is the GEX flip?</div>
+        </div>
+        <div class="regime reg-squeeze">⚠ GAMMA SQUEEZE ZONE — 670–675</div>
+        <div class="thesis">
+          <b>Setup:</b> dealers flip positive gamma above <b>668.50</b>; spot
+          pinned in the pocket. 0DTE call wall caps upside at <b>675</b>.
+        </div>
+        <div class="canvasstep done">✓ TICKER — SPY structure loaded</div>
+        <div class="canvasstep done">✓ LEVELS — GEX flip 668.50 · wall 675</div>
+        <div class="canvasstep">○ FLOW — awaiting question</div>
+        <div class="canvasstep">○ READ — builds here</div>
+        <div class="prompt"><input placeholder="Ask about SPY structure…"><button>Ask</button></div>
+      </div>
+    </div>
+
+    <!-- flow feed -->
+    <div class="panel fwrap">
+      <div class="phead">
+        <div class="ptitle">FLOW FEED</div>
+        <div class="psub">sweeps · blocks · splits</div>
+        <div class="badge">T0 · 24–48h</div>
+        <div class="badge">100 results · sort: time</div>
+      </div>
+      <table>
+        <thead><tr>
+          <th>TIME</th><th>TKR</th><th>STRIKE</th><th>C/P</th><th>EXP</th><th>DTE</th>
+          <th>SIDE</th><th>FLOW</th><th>SIZE</th><th>PREM</th><th>VOL</th><th>OI</th><th>ΔOI</th><th>SPOT</th><th>IV</th><th>V/OI</th>
+        </tr></thead>
+        <tbody id="flow"></tbody>
+      </table>
+    </div>
+
+    <footer>
+      <span><span class="dot">●</span> demo · mock data</span>
+      <span>matrix ← /grid ← T1 buckets (30d)</span>
+      <span>flow ← /flow ← T0 raw (24–48h)</span>
+      <span>ai ← /ai/analyze ← T2 rollups</span>
+      <span>history ← T3 Parquet + DuckDB (on demand)</span>
+      <span style="margin-left:auto">freshness &lt; 60s · export-first retention · deny-default grants</span>
+    </footer>
+
+  </div>
+</main>
+
+<script>
+let seed = 7;
+const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+const fmt = v => {
+  const a = Math.abs(v);
+  const s = v < 0 ? '-' : '';
+  return a >= 1e6 ? `${s}$${(a/1e6).toFixed(2)}M` : a >= 1e3 ? `${s}$${(a/1e3).toFixed(0)}K` : `${s}$${a.toFixed(0)}`;
+};
+
+// GEX matrix — strikes descending around 671
+const mx = document.getElementById('matrix');
+for (let s = 690; s >= 652; s -= 1) {
+  const dist = Math.abs(s - 671);
+  const mag = Math.max(.06, 1 - dist / 22);
+  let row = `<tr><td class="k num">${s}.0</td>`;
+  for (let c = 0; c < 6; c++) {
+    const v = (rnd() - .42) * mag * 9.5e6;
+    const cls = v >= 0 ? 'pos' : 'neg';
+    const weight = Math.abs(v) > 2e6 ? ' big' : '';
+    row += `<td class="${cls}${weight}">${fmt(v)}</td>`;
+  }
+  mx.insertAdjacentHTML('beforeend', row + '</tr>');
+}
+
+// Flow feed rows
+const fl = document.getElementById('flow');
+const sides = [['ASK','side-ask'],['BID','side-bid'],['MID','side-mid']];
+for (let i = 0; i < 24; i++) {
+  const isCall = rnd() > .45;
+  const strike = 655 + Math.floor(rnd() * 32);
+  const [side, sc] = sides[Math.floor(rnd() * 3)];
+  const score = Math.round((rnd() - .5) * 120);
+  const prem = rnd() * 2.4e6 + 12e3;
+  const size = Math.floor(rnd() * 2200) + 12;
+  const vol = Math.floor(rnd() * 42000) + 400;
+  const oi = Math.floor(rnd() * 160000) + 900;
+  const doi = Math.round((rnd() - .4) * 42000);
+  const spot = 668 + rnd() * 6;
+  const iv = 18 + rnd() * 22;
+  const voi = (rnd() * 3.2 + .1);
+  const dte = Math.floor(rnd() * 45);
+  const mm = String(10 + Math.floor(rnd() * 49)).padStart(2, '0');
+  const ss = String(Math.floor(rnd() * 60)).padStart(2, '0');
+  fl.insertAdjacentHTML('beforeend', `<tr>
+    <td class="num">09/30·15:${mm}:${ss}</td>
+    <td class="num">SPY</td>
+    <td class="num">${strike}</td>
+    <td class="${isCall ? 'cp-c' : 'cp-p'}">${isCall ? 'CALL' : 'PUT'}</td>
+    <td class="num">10/${String(2 + Math.floor(rnd()*28)).padStart(2,'0')}</td>
+    <td class="num">${dte}</td>
+    <td class="${sc}">${side}</td>
+    <td class="num ${score >= 0 ? 'pos' : 'neg'}">${score >= 0 ? '+' : ''}${score}</td>
+    <td class="num">${size}</td>
+    <td class="num">${fmt(prem)}</td>
+    <td class="num">${vol.toLocaleString()}</td>
+    <td class="num">${oi.toLocaleString()}</td>
+    <td class="num ${doi >= 0 ? 'pos' : 'neg'}">${doi >= 0 ? '+' : ''}${doi.toLocaleString()}</td>
+    <td class="num">${spot.toFixed(2)}</td>
+    <td class="num">${iv.toFixed(1)}%</td>
+    <td class="num">${voi.toFixed(2)}x</td>
+  </tr>`);
+}
+</script>
+</body>
+</html>
