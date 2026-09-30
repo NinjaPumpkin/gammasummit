@@ -79,6 +79,13 @@ is unproven community code).
 **Ecosystem picks:** DuckDB GitHub Action (CI analytics tests, free),
 [execution plan visualizer](https://db.cs.uni-tuebingen.de/explain/) (debug slow
 backtests), book *Local-First Analytics* (partitioning/perf reference).
+**Adopt as internal tool: [duck-ui](https://github.com/caioricciuti/duck-ui)**
+(MIT) — browser DuckDB workbench: SQL editor, notebooks, charts, all client-side
+DuckDB-WASM, zero backend. Use for T3 Parquet research/ad-hoc review without
+building a research UI. Security fit: runs in-tab, never becomes a query
+surface on our servers. Caveat: WASM memory ceiling (~2–4 GB) — heavy backtests
+stay on native DuckDB; day-level Parquet slices fine. Also living proof the
+DuckDB-WASM pattern works.
 Worth reading: DuckDB-WASM + R2 "query big data for almost free" pattern —
 browser-side on-demand history queries with zero backend compute = interesting
 experiment for long-tail on-demand tier (market data is shareable; use signed
