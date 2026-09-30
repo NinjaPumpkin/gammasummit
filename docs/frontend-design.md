@@ -1,7 +1,12 @@
 # Frontend Design Spec — Dashboard v1
 
+> ⚠ STATUS 2026-09-30: mock visuals **rejected by owner**. UI source of truth
+> is now `docs/design-reference-skylit.md` (skylit.ai layout patterns). This
+> spec's interaction rules, perf budgets, and accessibility baseline remain
+> valid; the visual/layout sections will be rewritten from the design
+> reference when UI build starts. Mock file kept as history only.
+
 Companion to `frontend/mockups/dashboard-v1.html` (open in browser to view).
-Design review build — mock data, real layout.
 
 ## Information hierarchy
 

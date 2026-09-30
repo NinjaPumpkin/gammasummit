@@ -55,6 +55,10 @@ anti-patterns that must NOT be carried over.
 | `data/` | local dev data (gitignored) |
 | `docs/` | architecture, tiering, security, operations, ADRs |
 
+**Start here: [`docs/master-architecture.md`](docs/master-architecture.md)** —
+the floor plan. UI follows skylit.ai layout patterns
+(`docs/design-reference-skylit.md`).
+
 ## Naming conventions
 
 - Dirs: lowercase single word (`backend`, `db`) or kebab-case for docs files
