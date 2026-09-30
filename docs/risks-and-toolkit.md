@@ -101,6 +101,64 @@ URLs). Marked experimental, not architecture.
   5–10 GB database is always snappy.
 - VACUUM health via advisors; upsert-heavy writers need autovacuum tuning.
 
+### Postgres extensions — verdicts (catalog verified live on Supabase 2026-09-30)
+
+Available in the hosted catalog (`list_extensions`), picked for our workload:
+
+| Extension | Version | Job in our stack |
+|---|---|---|
+| `pg_partman` | 5.3.1 | **automates partition management** (time + ID) — our single-table partitioning rule runs itself |
+| `pg_cron` | 1.6.4 | schedules rollups in-DB — OR use backend timers, never both |
+| `pgmq` | 1.5.1 | lightweight SQS-like queue in Postgres — lazy-backfill job queue option (ch.10) |
+| `pg_stat_monitor` | 2.1 | query stats WITH plans + histograms — beats bare `pg_stat_statements` (installed) |
+| `index_advisor` | 0.2.0 | query index advisor — suggests before we create |
+| `hypopg` | 1.4.1 | **hypothetical indexes** — test index value WITHOUT creating it |
+| `pgaudit` | 17.1 | audit logging — feeds the audit-log requirement (`security-future.md`) |
+| `pgtap` | 1.2.0 | SQL unit tests in CI — schema invariants as tests |
+| `plpgsql_check` | 2.7 | lints plpgsql (RPC functions) |
+| `pg_repack` | 1.5.2 | bloat cleanup with minimal locks — upsert storms create dead tuples |
+| `pg_prewarm` | 1.2 | prewarm hot tables after restart |
+| `moddatetime`/`insert_username` | — | updated_at / updated_by triggers, free |
+
+Not present: **TimescaleDB** — confirms our design choice (native partitioning
++ rollups, no hypertable dependency). `wrappers`/`postgres_fdw` = federation
+escape hatch if we ever need cross-DB joins from SQL.
+
+### Live advisor scorecard (knszzlbwlnjjbnrlotib, 2026-09-30) — the cost smoking gun
+
+| Lint | Level | Count | Action |
+|---|---|---|---|
+| `rls_disabled_in_public` | ERROR | **1,255** | fixed by new-project deny-default (never carried over) |
+| `unused_index` | INFO | **2,207** | **write amplification on every upsert** — dropping them = faster writes + less storage + cheaper bill |
+| `rls_enabled_no_policy` | INFO | 52 | tidy at migration |
+| `multiple_permissive_policies` | WARN | 50 | consolidate in new schema |
+| `function_search_path_mutable` | WARN | 20 | pin `search_path` on functions (ch.17) |
+| `anon_security_definer_function_executable` | WARN | 2 | **revoke anon EXECUTE now** — live exposure |
+| `auth_leaked_password_protection` | WARN | 1 | enable in auth settings |
+| `unindexed_foreign_keys` / `no_primary_key` / `duplicate_index` | INFO/WARN | 8/4/3 | schema hygiene |
+
+Run `get_advisors` after every DDL batch (MCP tool) — gate = zero ERROR lints.
+
+### awesome-supabase list — tool verdicts (audited 2026-09-30)
+
+**Adopt:**
+- **`supabase-security` linter** (MIT, CLI + GitHub Action) — lints
+  `supabase/migrations` for grant/RLS mistakes AND flags the **Oct 30, 2026
+  Supabase Data API grants change** — tables without explicit GRANTs change
+  exposure behavior. Add to CI for gammasummit AND check SignalForge impact.
+- **`backupdrill`** (MIT) — backups to own bucket + **scheduled restore-
+  verification drills** → implements the "untested backup is not a backup" rule.
+- Crib audit SQL from `supabase-rls-leak-demo` (RLS-disabled + `USING(true)`
+  probes) into our CI `has_table_privilege` regression test.
+
+**Evaluate later:** RowShield (outside-in anonymous probe of deployed app —
+complement to CI checks), `supabase-plus` (CLI extras), pgflow/Supabase Queues
+(= managed alternative to pgmq).
+
+**Rejected:** GuardLayer (Next.js-only, we're Vite), 1bench (paid, MCP+psql
+cover it), Nemesis Shield (no Edge Functions in v1), starter kits (we build
+our own).
+
 ## Backend hardening (before first endpoint)
 
 - Fail-fast config validation at startup (pydantic-settings), 3.10-compatible
