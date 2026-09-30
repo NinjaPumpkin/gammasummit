@@ -42,6 +42,48 @@ a past failure.
 | Repeated backtests | persistent `.duckdb` file w/ materialized views |
 | `ANALYZE` after bulk loads | better plans |
 
+### DuckDB extensions — verdicts (audited vs awesome-duckdb list, 2026-09-30)
+
+**Adopt (core, install in `db/queries/duckdb_setup.sql`):**
+
+| Extension | Job in our stack |
+|---|---|
+| `parquet` | T3 cold tier read/write — baseline |
+| `httpfs` + `aws` | Parquet directly from R2/B2 + credential handling |
+| `postgres` | **federation**: join hot Supabase T0/T1 with cold Parquet in ONE query — backtests without export steps; also old-vs-new reconciliation during cutover |
+| `sqlite` | read SignalForge legacy `signalforge.db` / `gamma_copilot.db` directly during migration + cold archiving |
+| `json` | UW raw API response archives (semi-structured) |
+| `arrow` | zero-copy handoff to Python (pandas/polars) in backtests |
+
+**Adopt (community, `INSTALL … FROM community`):**
+
+| Extension | Job |
+|---|---|
+| `cache_httpfs` | read-cache layer over R2/B2 → less egress + faster repeated backtest scans |
+| `cache_prewarm` | preload blocks before scheduled research runs |
+| `query_condition_cache` | speed up repeated-query backtest workloads |
+
+**Evaluate later (real value, not v1):**
+
+| Extension | Why wait |
+|---|---|
+| `ducklake` | lakehouse format w/ ACID + snapshots — could replace hand-rolled export manifests one day; needs a catalog DB; revisit when cold tier > 1 TB |
+| `scrooge` | finance-specific aggregations — check maturity before depending on it |
+| `stats_duck` | descriptive stats + `VISUALIZE`→Vega-Lite for research reports |
+| `httpserver` | DuckDB-over-HTTP — tempting for on-demand research, but = second query surface; violates single-API security model unless strictly internal |
+
+**Rejected:** `vss` (vector search = Open Brain's problem, not market data),
+`spatial`/`h3`/`fts`/`elasticsearch`/`prql`/`gpudb` (no current workload; GPU one
+is unproven community code).
+
+**Ecosystem picks:** DuckDB GitHub Action (CI analytics tests, free),
+[execution plan visualizer](https://db.cs.uni-tuebingen.de/explain/) (debug slow
+backtests), book *Local-First Analytics* (partitioning/perf reference).
+Worth reading: DuckDB-WASM + R2 "query big data for almost free" pattern —
+browser-side on-demand history queries with zero backend compute = interesting
+experiment for long-tail on-demand tier (market data is shareable; use signed
+URLs). Marked experimental, not architecture.
+
 ## Supabase supercharge (hot tier)
 
 - Rollups scheduled via `pg_cron` OR backend timers — pick one scheduler, never
