@@ -4,6 +4,13 @@ Owner directive 2026-09-30: GammaSummit UI follows skylit.ai layout patterns;
 mock v1 visuals rejected. This document records **structural layout patterns**
 observed from the live product (account: owner's own subscription).
 
+**Deep RE + parity gate:** exact controls/palettes/node styles in
+`SignalForge/docs/SKYLIT_REVERSE_ENGINEERING.md`; element-by-element 1:1 status
+in `docs/parity-checklist-skylit.md`; working demo in
+`frontend/mockups/dashboard-v3.html` (heatmap toolbar: movement filter
+All/↑/↓, velocity window All/1m/5m/15m/1h/4h/1d, velocity on/off, View
+Controls, Node % panel, pulses + velocity chips).
+
 IP note: we emulate layout structure, density, and interaction patterns.
 Their branding, copy, naming, and visual assets stay their property — our
 naming (MEATSEEKER/Cloutseeker etc.) and our own visual identity remain ours.

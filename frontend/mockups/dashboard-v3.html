@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GammaSummit — Heatmap Demo v3</title>
+<style>
+  :root {
+    --bg:#0a0d12; --panel:#10141b; --head:#151a22; --border:#222a36;
+    --text:#dfe6ee; --muted:#8b98a8; --dim:#5c6b7c;
+    --green:#2fd158; --red:#f0464b; --amber:#f2b134; --blue:#3d7bfd; --violet:#a855f7;
+    --mono:"SF Mono",ui-monospace,Menlo,monospace;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font:12px/1.45 Inter,-apple-system,sans-serif; height:100vh; overflow:hidden; display:flex; flex-direction:column; }
+  .num { font-family:var(--mono); font-variant-numeric:tabular-nums; }
+
+  /* top toolbar */
+  header { display:flex; align-items:center; gap:8px; padding:7px 12px; background:var(--head); border-bottom:1px solid var(--border); flex-wrap:wrap; }
+  .btn { background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:4px 10px; color:var(--muted); font-size:11px; cursor:pointer; user-select:none; }
+  .btn:hover { border-color:var(--blue); color:var(--text); }
+  .btn.on { background:var(--blue); border-color:var(--blue); color:#fff; }
+  .seg { display:flex; background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:2px; }
+  .seg .btn { border:none; background:transparent; padding:3px 12px; }
+  .seg .btn.on { background:var(--blue); color:#fff; }
+  .sym { font-family:var(--mono); font-size:15px; font-weight:800; }
+  .price .p { font-family:var(--mono); font-size:13px; font-weight:700; }
+  .price .c { font-family:var(--mono); font-size:10px; }
+  .neg { color:var(--red); } .pos { color:var(--green); }
+  .sep { width:1px; height:20px; background:var(--border); }
+  .menu { position:relative; }
+  .popover { display:none; position:absolute; top:32px; left:0; z-index:50; background:var(--head); border:1px solid var(--border); border-radius:10px; padding:12px; min-width:250px; box-shadow:0 12px 40px rgba(0,0,0,.6); }
+  .popover.open { display:block; }
+  .poptitle { font-size:9.5px; letter-spacing:1.5px; color:var(--dim); font-weight:800; margin:8px 0 5px; }
+  .poptitle:first-child { margin-top:0; }
+  .optrow { display:flex; gap:5px; flex-wrap:wrap; }
+  .opt { padding:3px 9px; border:1px solid var(--border); border-radius:5px; font-size:10px; color:var(--muted); cursor:pointer; }
+  .opt:hover { color:var(--text); border-color:var(--dim); }
+  .opt.on { background:var(--blue); border-color:var(--blue); color:#fff; }
+  .swatches { display:flex; gap:4px; }
+  .sw { width:34px; height:16px; border-radius:4px; cursor:pointer; border:2px solid transparent; }
+  .sw.on { border-color:#fff; }
+  .range-row { display:flex; align-items:center; gap:8px; color:var(--muted); font-size:10px; }
+  input[type=range] { flex:1; accent-color:var(--blue); }
+
+  /* matrix area */
+  .work { flex:1; display:flex; overflow:hidden; }
+  .matrix-wrap { flex:1; overflow:auto; border-right:1px solid var(--border); }
+  table { border-collapse:separate; border-spacing:0; width:100%; }
+  thead th { position:sticky; top:0; z-index:3; background:var(--head); color:var(--dim); font-size:10px; padding:6px 10px; text-align:right; font-weight:600; letter-spacing:.5px; }
+  thead th:first-child { left:0; z-index:4; text-align:center; }
+  td.k { position:sticky; left:0; z-index:2; background:#0c1017; text-align:center; font-family:var(--mono); font-size:11px; font-weight:500; padding:0 10px; width:72px; }
+  td.cell { position:relative; height:18px; padding:1px 8px; text-align:right; font-family:var(--mono); font-size:10px; font-weight:500; cursor:pointer; min-width:110px; }
+  td.cell .vkey { position:absolute; inset:0; display:flex; align-items:center; justify-content:flex-end; }
+  td.cell .chip { position:absolute; top:-1px; right:2px; font-size:8.5px; padding:0 3px; border-radius:6px; font-family:var(--mono); background:rgba(0,0,0,.55); }
+  td.cell.king { font-weight:700; box-shadow: inset 0 0 0 2px rgba(168,85,247,.6); }
+  td.cell.sig { box-shadow: inset 0 0 0 1px rgba(168,85,247,.35); }
+  td.cell .star { margin-left:3px; }
+  /* row net bar (row strike cell) */
+  td.k.rowpos { box-shadow: inset 2px 0 0 -.5px rgb(74,222,128), inset 6px 0 7px -4px rgb(74,222,128); }
+  td.k.rowneg { box-shadow: inset 2px 0 0 -.5px rgb(248,113,113), inset 6px 0 7px -4px rgb(248,113,113); }
+
+  /* velocity pulse — semantics from live CSS: scale(1.02) + opacity .6→1, 1.8s; ring border 1→2px, 2s */
+  @keyframes velocity-pulse { 0%,100% { opacity:.6; transform:scale(1); } 50% { opacity:1; transform:scale(1.02); } }
+  @keyframes velocity-ring-up { 0% { box-shadow:inset 0 0 0 1px rgba(47,209,88,.35); } 50% { box-shadow:inset 0 0 0 2px rgba(47,209,88,.85); } 100% { box-shadow:inset 0 0 0 1px rgba(47,209,88,.35); } }
+  @keyframes velocity-ring-down { 0% { box-shadow:inset 0 0 0 1px rgba(240,70,75,.35); } 50% { box-shadow:inset 0 0 0 2px rgba(240,70,75,.85); } 100% { box-shadow:inset 0 0 0 1px rgba(240,70,75,.35); } }
+  td.cell.pulse-up { animation: velocity-pulse 1.8s ease-in-out, velocity-ring-up 2s ease-in-out; }
+  td.cell.pulse-down { animation: velocity-pulse 1.8s ease-in-out, velocity-ring-down 2s ease-in-out; }
+  td.cell.dim { opacity:.28; }
+
+  /* right rail */
+  .rail { width:320px; display:flex; flex-direction:column; overflow-y:auto; }
+  .phead { display:flex; align-items:center; gap:8px; padding:7px 12px; background:var(--head); border-bottom:1px solid var(--border); position:sticky; top:0; }
+  .ptitle { font-size:10px; font-weight:800; letter-spacing:1.5px; }
+  .badge { margin-left:auto; font-size:9px; font-family:var(--mono); border:1px solid var(--border); border-radius:4px; padding:1px 7px; color:var(--muted); }
+  .badge.live { color:var(--green); border-color:var(--green); }
+  .rbody { padding:10px 12px; }
+  .regime { padding:5px 10px; border-radius:6px; font-weight:800; letter-spacing:1px; font-size:10px; margin:2px 0 8px; background:rgba(240,70,75,.12); border:1px solid var(--red); color:var(--red); }
+  .thesis { color:var(--muted); font-size:11px; line-height:1.6; }
+  .thesis b { color:var(--text); }
+  .step { border-left:2px solid var(--border); padding:3px 10px; margin:5px 0; color:var(--dim); font-size:10px; }
+  .step.done { border-color:var(--green); color:var(--muted); }
+  .chips-row { display:flex; gap:5px; flex-wrap:wrap; margin:6px 0; }
+  .chipbtn { border:1px solid var(--border); border-radius:99px; padding:2px 9px; color:var(--muted); font-size:10px; cursor:pointer; }
+  .legend { display:flex; gap:10px; padding:6px 12px; color:var(--dim); font-size:9.5px; border-top:1px solid var(--border); }
+  .lg { display:flex; align-items:center; gap:4px; }
+
+  footer { display:flex; gap:16px; align-items:center; padding:4px 12px; background:#0c1017; border-top:1px solid var(--border); color:var(--dim); font:9.5px var(--mono); }
+  .dot { color:var(--green); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="btn">All Tickers <span class="num" style="color:var(--dim)">609</span> <span style="border:1px solid var(--border);border-radius:4px;padding:0 4px;font-size:9px">⌘K</span></div>
+  <div class="sym">SPY</div>
+  <div class="seg"><div class="btn on">⚡ GEX</div><div class="btn">VEX</div></div>
+  <div class="price"><span class="p">671.24</span> <span class="c neg">-1.56 (-0.23%)</span></div>
+  <div class="sep"></div>
+
+  <!-- movement direction filter (skylit: All / Increasing / Decreasing) -->
+  <div class="menu">
+    <div class="btn" id="dirBtn">All ▾</div>
+    <div class="popover" id="dirPop">
+      <div class="poptitle">MOVEMENT</div>
+      <div class="optrow">
+        <div class="opt on" data-dir="all">All</div>
+        <div class="opt" data-dir="up">↑ Increasing</div>
+        <div class="opt" data-dir="down">↓ Decreasing</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- velocity window (user spec: 5m / 15m / 1d etc.) -->
+  <div class="menu">
+    <div class="btn" id="velBtn">Δ 1m ▾</div>
+    <div class="popover" id="velPop">
+      <div class="poptitle">CHANGE WINDOW</div>
+      <div class="optrow">
+        <div class="opt" data-win="all">All</div>
+        <div class="opt on" data-win="1m">1m</div>
+        <div class="opt" data-win="5m">5m</div>
+        <div class="opt" data-win="15m">15m</div>
+        <div class="opt" data-win="1h">1h</div>
+        <div class="opt" data-win="4h">4h</div>
+        <div class="opt" data-win="1d">1d</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- velocity on/off (skylit: "Disable Velocity") -->
+  <div class="btn on" id="velToggle" title="Disable Velocity">⚡ Vel</div>
+
+  <!-- View controls -->
+  <div class="menu">
+    <div class="btn" id="viewBtn">View</div>
+    <div class="popover" id="viewPop" style="min-width:300px">
+      <div class="poptitle">QUICK PRESETS</div>
+      <div class="optrow"><div class="opt" data-preset="tight">Tight</div><div class="opt on" data-preset="normal">Normal</div><div class="opt" data-preset="wide">Wide</div></div>
+      <div class="poptitle">STRIKE RANGE</div>
+      <div class="range-row"><input type="range" id="strikeRange" min="20" max="60" value="39"> <span id="strikeCount">39 strikes</span></div>
+      <div class="poptitle">EXPIRATIONS</div>
+      <div class="optrow"><div class="opt" data-exp="2">Front 2</div><div class="opt" data-exp="3">3</div><div class="opt on" data-exp="6">5 · All</div></div>
+      <div class="optrow" style="margin-top:4px"><div class="opt">To Friday · 2 Oct</div><div class="opt">To Next Friday · 9 Oct</div></div>
+      <div class="optrow" style="margin-top:4px"><div class="opt">To OPEX · 16 Oct</div><div class="opt">To Q-OPEX · 18 Dec</div></div>
+      <div class="poptitle">HIDE STRIKES</div>
+      <div class="optrow"><div class="opt on" data-hide="off">Off</div><div class="opt" data-hide="empty">Empty</div><div class="opt" data-hide="under">Under</div></div>
+    </div>
+  </div>
+
+  <!-- Node % settings -->
+  <div class="menu">
+    <div class="btn" id="nodeBtn">Node %</div>
+    <div class="popover" id="nodePop" style="min-width:280px;left:-120px">
+      <div class="poptitle">READ AS</div>
+      <div class="optrow"><div class="opt on" data-read="value">Value</div><div class="opt" data-read="pct">% King</div></div>
+      <div class="poptitle">SIGN · DECIMALS · BOLD</div>
+      <div class="optrow">
+        <div class="opt on" data-sign="pm">±</div><div class="opt" data-sign="abs">Abs</div>
+        <div class="opt on" data-dec="1">.1</div><div class="opt" data-dec="0">.0</div><div class="opt" data-dec="2">.2</div>
+        <div class="opt" data-bold="off">B off</div><div class="opt" data-bold="on">B on</div>
+      </div>
+      <div class="poptitle">LOW NODES</div>
+      <div class="optrow"><div class="opt" data-low="hide">Hide</div><div class="opt on" data-low="dim">Dim</div><div class="opt" data-low="fade">Fade</div><div class="opt" data-low="off">Off</div></div>
+      <div class="poptitle">MIN % KING <span id="minPctLabel" class="num">15%</span></div>
+      <div class="range-row"><input type="range" id="minPct" min="0" max="60" value="15"></div>
+      <div class="poptitle">PALETTE</div>
+      <div class="swatches" id="swatches"></div>
+      <div class="poptitle">VELOCITY CHIPS</div>
+      <div class="optrow"><div class="opt on" data-vel="all">All</div><div class="opt" data-vel="selected">Selected</div></div>
+    </div>
+  </div>
+
+  <div class="sep"></div>
+  <div class="btn" title="auto-center on king">👑</div>
+  <div class="btn" title="center on spot">◎</div>
+  <div class="btn" title="refresh">↻</div>
+  <div class="btn" title="movers filter">⚡ Movers 20</div>
+  <div class="btn" title="copy image">⧉</div>
+  <div class="btn" title="save image">⇩</div>
+  <div class="badge live" style="margin-left:auto">● LIVE · updates 1s</div>
+</header>
+
+<div class="work">
+  <div class="matrix-wrap">
+    <table>
+      <thead><tr><th>STRIKE</th><th>2026-10-01</th><th>2026-10-02</th><th>2026-10-03</th><th>2026-10-06</th><th>2026-10-17</th><th>2026-11-21</th></tr></thead>
+      <tbody id="matrix"></tbody>
+    </table>
+    <div class="legend">
+      <div class="lg"><span style="width:60px;height:8px;border-radius:2px;background:linear-gradient(90deg,#440154,#30678d,#36b677,#fde725)"></span> viridis · value ramp</div>
+      <div class="lg"><span style="color:var(--violet)">★</span> king node</div>
+      <div class="lg"><span style="width:10px;height:10px;border:1px solid rgba(168,85,247,.6);border-radius:2px"></span> ≥ MIN % KING</div>
+      <div class="lg"><span style="color:var(--green)">●-5%</span> velocity chip (Δ window)</div>
+    </div>
+  </div>
+
+  <div class="rail">
+    <div class="phead"><div class="ptitle">AI ANALYST</div><div class="badge">/ai/analyze · SSE</div></div>
+    <div class="rbody">
+      <div class="chips-row">
+        <div class="chipbtn">What is a king node?</div>
+        <div class="chipbtn">Read SPY structure</div>
+        <div class="chipbtn">Where is the GEX flip?</div>
+      </div>
+      <div class="regime">⚠ GAMMA SQUEEZE ZONE — 670–675</div>
+      <div class="thesis"><b>Setup:</b> dealers flip positive gamma above <b>668.50</b>; spot pinned. 0DTE call wall caps upside at <b>675</b>. King node forming at 675C per live velocity.</div>
+      <div class="step done">✓ TICKER — SPY structure loaded</div>
+      <div class="step done">✓ LEVELS — GEX flip 668.50 · wall 675</div>
+      <div class="step">○ FLOW — awaiting question</div>
+      <div class="step">○ READ — builds here</div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <span><span class="dot">●</span> demo · mock data</span>
+  <span>matrix ← /grid ← T1 buckets (30d)</span>
+  <span>velocity/pulse ← Δ window (1m/5m/15m/1d)</span>
+  <span>ai ← /ai/analyze ← T2</span>
+  <span>history ← T3 + DuckDB</span>
+  <span style="margin-left:auto">freshness &lt; 60s · export-first · deny-default grants</span>
+</footer>
+
+<script>
+// ── palettes (matplotlib ramps — from RE notes, free to reimplement) ──
+const PALETTES = {
+  viridis: ['#440154','#433982','#30678d','#218f8b','#36b677','#8ed542','#fde725'],
+  cividis: ['#00204c','#173b83','#4459a9','#6c78c4','#9f99db','#cec0dd','#f2f2f2'],
+  inferno: ['#000004','#1f0c48','#550f6d','#88226a','#a83655','#e35832','#f9fb0e'],
+  magma:   ['#000004','#280f53','#641a80','#a2307d','#de4968','#f9946d','#fcfdbf'],
+  plasma:  ['#0d0887','#4f03a1','#8309a5','#b12a90','#e15a6a','#fdaf7a','#fcfdbf'],
+  turbo:   ['#30123b','#4881eb','#50c9b3','#73f94f','#d1ef2a','#fb9b17','#d23105'],
+  gray:    ['#242424','#414141','#606060','#818181','#a4a4a4','#c8c8c8','#eeeeee'],
+};
+const hex2rgb = h => [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)];
+const lum = ([r,g,b]) => .299*r + .587*g + .114*b;
+function ramp(stops, t) {
+  t = Math.max(0, Math.min(1, t));
+  const x = t * (stops.length - 1), i = Math.min(Math.floor(x), stops.length - 2), f = x - i;
+  const a = hex2rgb(stops[i]), b = hex2rgb(stops[i+1]);
+  return `rgb(${Math.round(a[0]+(b[0]-a[0])*f)},${Math.round(a[1]+(b[1]-a[1])*f)},${Math.round(a[2]+(b[2]-a[2])*f)})`;
+}
+// asymmetric normalization from RE preview rig: pos ≈ .5+.5r^1.5, neg ≈ .5-.5|r|^.85
+const norm = r => r >= 0 ? .5 + .5*Math.pow(r,1.5) : .5 - .5*Math.pow(Math.abs(r),.85);
+
+// ── state ──
+let seed = 11;
+const rnd = () => (seed = (seed*16807)%2147483647)/2147483647;
+const S = {
+  palette:'viridis', read:'value', sign:'pm', dec:1, bold:false, low:'dim',
+  minPct:15, velChips:'all', dir:'all', win:'1m', winMult:{'all':3,'1m':1,'5m':2.6,'15m':5.2,'1h':9,'4h':13,'1d':16}, velEnabled:true,
+  strikes:39, exps:6, hide:'off',
+};
+const cells = []; // {strike, exp, value, vel, el, vEl, chipEl}
+const fmt = v => {
+  const a = Math.abs(v), sg = v<0?'-':'';
+  return a>=1e6 ? `${sg}$${(a/1e6).toFixed(2)}M` : a>=1e3 ? `${sg}$${(a/1e3).toFixed(1)}K` : `${sg}$${a.toFixed(0)}`;
+};
+
+function buildMatrix() {
+  const tb = document.getElementById('matrix');
+  tb.innerHTML = ''; cells.length = 0;
+  for (let s = 690; s >= 690 - S.strikes + 1; s--) {
+    const dist = Math.abs(s-671), mag = Math.max(.06, 1-dist/24);
+    const rowNet = (rnd()-.45)*mag;
+    const tr = document.createElement('tr');
+    const k = document.createElement('td');
+    k.className = 'k num ' + (rowNet >= 0 ? 'rowpos' : 'rowneg');
+    k.textContent = s + '.0';
+    tr.appendChild(k);
+    for (let e = 0; e < S.exps; e++) {
+      const v = (rnd()-.42)*mag*9.5e6;
+      const td = document.createElement('td');
+      td.className = 'cell';
+      td.dataset.velocityKey = `${s}_exp${e}`;
+      td.innerHTML = `<div class="vkey"></div><div class="chip" style="display:none"></div>`;
+      tr.appendChild(td);
+      cells.push({strike:s, exp:e, value:v, vel:(rnd()-.4)*7, el:td, vEl:td.querySelector('.vkey'), chipEl:td.querySelector('.chip')});
+    }
+    tb.appendChild(tr);
+  }
+  render();
+}
+
+function render() {
+  const maxAbs = Math.max(...cells.map(c => Math.abs(c.value))) || 1;
+  const king = cells.reduce((a,c) => Math.abs(c.value) > Math.abs(a.value) ? c : a, cells[0]);
+  const stops = PALETTES[S.palette];
+  for (const c of cells) {
+    const r = c.value / maxAbs;
+    const fill = ramp(stops, norm(r));
+    const m = fill.match(/\d+/g).map(Number);
+    const ink = lum(m) > 128 ? '#000000' : '#ffffff';
+    c.el.style.backgroundColor = fill;
+    c.el.style.color = ink;
+
+    // low-node treatment
+    const pctKing = Math.abs(c.value) / Math.abs(king.value) * 100;
+    c.el.classList.remove('dim','king','sig');
+    const significant = pctKing >= S.minPct;
+    if (c === king) c.el.classList.add('king');
+    else if (significant) c.el.classList.add('sig');
+    if (S.low === 'dim' && !significant && c !== king) c.el.classList.add('dim');
+    if (S.low === 'hide' && !significant && c !== king) c.el.style.visibility = 'hidden';
+    else c.el.style.visibility = 'visible';
+    if (S.low === 'fade' && !significant && c !== king) c.el.style.opacity = .5;
+    else if (S.low !== 'dim') c.el.style.opacity = 1;
+
+    // value text
+    const star = c === king ? '<span class="star">★</span>' : '';
+    if (S.read === 'value') {
+      let t = fmt(c.value);
+      if (S.sign === 'abs') t = t.replace('-','');
+      c.vEl.innerHTML = t + star;
+    } else {
+      const p = (c.value / Math.abs(king.value) * 100).toFixed(S.dec);
+      c.vEl.innerHTML = (S.sign==='abs' ? Math.abs(p) : p) + '%' + star;
+    }
+    c.el.style.fontWeight = (S.bold || c === king) ? 700 : 500;
+
+    // velocity chip
+    const wv = c.vel * (S.winMult[S.win]||1);
+    const showChip = S.velEnabled && Math.abs(wv) >= 2 && (S.velChips === 'all' || c === king);
+    c.chipEl.style.display = showChip ? 'block' : 'none';
+    if (showChip) {
+      c.chipEl.textContent = `${wv>0?'+':''}${wv.toFixed(0)}%`;
+      c.chipEl.style.color = wv >= 0 ? '#2fd158' : '#f0464b';
+    }
+    // movement-direction filter
+    const matchDir = S.dir === 'all' || (S.dir === 'up' && c.vel > 0) || (S.dir === 'down' && c.vel < 0);
+    if (!matchDir) c.el.classList.add('dim');
+  }
+}
+
+// live pulse simulation — big change → pulse green (up) / red (down) + chip
+setInterval(() => {
+  if (!S.velEnabled) return;
+  for (let i = 0; i < 3; i++) {
+    const c = cells[Math.floor(Math.random()*cells.length)];
+    const up = Math.random() > .5;
+    const delta = (up ? 1 : -1) * (Math.random()*1.4e6 + 2e5) * (S.winMult[S.win]||1)/2;
+    c.value += delta;
+    c.vel = Math.max(-30, Math.min(30, c.vel + (up ? 1 : -1) * (Math.random()*4+1)));
+    render();
+    const cls = up ? 'pulse-up' : 'pulse-down';
+    c.el.classList.remove('pulse-up','pulse-down');
+    void c.el.offsetWidth; // restart animation
+    c.el.classList.add(cls);
+    setTimeout(() => c.el.classList.remove(cls), 1900);
+  }
+}, 2200);
+
+// ── popover wiring ──
+function toggle(id) {
+  document.querySelectorAll('.popover').forEach(p => { if (p.id !== id) p.classList.remove('open'); });
+  document.getElementById(id).classList.toggle('open');
+}
+document.getElementById('dirBtn').onclick = () => toggle('dirPop');
+document.getElementById('velBtn').onclick = () => toggle('velPop');
+document.getElementById('viewBtn').onclick = () => toggle('viewPop');
+document.getElementById('nodeBtn').onclick = () => toggle('nodePop');
+
+document.getElementById('velToggle').onclick = e => {
+  S.velEnabled = !S.velEnabled;
+  e.target.classList.toggle('on', S.velEnabled);
+  e.target.title = S.velEnabled ? 'Disable Velocity' : 'Enable Velocity';
+  if (!S.velEnabled) document.querySelectorAll('.pulse-up,.pulse-down').forEach(x => x.classList.remove('pulse-up','pulse-down'));
+  render();
+};
+
+function optGroup(attr, fn) {
+  document.querySelectorAll(`[data-${attr}]`).forEach(el => {
+    el.onclick = () => {
+      el.parentElement.querySelectorAll('.opt').forEach(o => o.classList.remove('on'));
+      el.classList.add('on');
+      fn(el.dataset[attr.replace(/-([a-z])/g, (m,c)=>c.toUpperCase())] ?? el.dataset[attr], el);
+    };
+  });
+}
+optGroup('dir', v => { S.dir = v; document.getElementById('dirBtn').textContent = (v==='all'?'All':v==='up'?'↑ Increasing':'↓ Decreasing')+' ▾'; render(); });
+optGroup('win', v => { S.win = v; document.getElementById('velBtn').textContent = `Δ ${v} ▾`; render(); });
+optGroup('preset', v => { S.strikes = v==='tight'?24:v==='normal'?39:52; document.getElementById('strikeRange').value = S.strikes; document.getElementById('strikeCount').textContent = S.strikes+' strikes'; buildMatrix(); });
+optGroup('exp', v => { S.exps = +v; buildMatrix(); });
+optGroup('hide', v => { S.hide = v; render(); });
+optGroup('read', v => { S.read = v; render(); });
+optGroup('sign', v => { S.sign = v; render(); });
+optGroup('dec', v => { S.dec = +v; render(); });
+optGroup('bold', v => { S.bold = v==='on'; render(); });
+optGroup('low', v => { S.low = v; render(); });
+optGroup('vel', v => { S.velChips = v; render(); });
+
+document.getElementById('minPct').oninput = e => {
+  S.minPct = +e.target.value;
+  document.getElementById('minPctLabel').textContent = S.minPct + '%';
+  render();
+};
+document.getElementById('strikeRange').oninput = e => {
+  S.strikes = +e.target.value;
+  document.getElementById('strikeCount').textContent = S.strikes + ' strikes';
+  buildMatrix();
+};
+
+// palettes
+const sw = document.getElementById('swatches');
+Object.entries(PALETTES).forEach(([name, stops]) => {
+  const d = document.createElement('div');
+  d.className = 'sw' + (name === 'viridis' ? ' on' : '');
+  d.title = name;
+  d.style.background = `linear-gradient(90deg, ${stops.join(',')})`;
+  d.onclick = () => {
+    sw.querySelectorAll('.sw').forEach(x => x.classList.remove('on'));
+    d.classList.add('on');
+    S.palette = name;
+    render();
+  };
+  sw.appendChild(d);
+});
+
+buildMatrix();
+</script>
+</body>
+</html>
