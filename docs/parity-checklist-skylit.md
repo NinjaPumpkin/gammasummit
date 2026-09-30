@@ -21,8 +21,10 @@ Legend: ✅ in demo v3 · 📝 spec'd, builds in phase 4 · 🔍 needs deeper se
 | 2 | GEX / VEX toggle (⌘G / ⌘V, zap/activity icons) | metric mode | ✅ (VEX wiring ⏭ v2) |
 | 3 | Pinned ticker strip (SPXW + spot + Δ%) | secondary instrument tape | ✅ |
 | 4 | Movement filter `All ▾` → All / ↑ Increasing / ↓ Decreasing | filter by velocity direction | ✅ functional |
-| 5 | **Velocity Timeframe** `Δ ▾` → **All, 1m, 5m, 15m, 1h, 4h, 1d** | %Δ window for chips | ✅ functional |
+| 5 | **Velocity Timeframe** `Δ ▾` → **All, 1m, 5m, 15m, 1h, 4h, 1d** (detail panel also shows 10 min) | %Δ window for chips | ✅ functional |
 | 6 | **Disable Velocity** toggle | hide chips + stop pulses | ✅ functional |
+| 6b | Keyboard shortcuts `?` dialog + Cmd+J (AI), letter = ticker search, ←/→ prev/next ticker, Shift+G/V/C (NetGEX/NetVEX/GEX+VEX), Shift+T Trinity, Shift+R replay, Shift+H heatmap sidebar, Shift+A alerts sidebar, 1-9 watchlists, Cmd+1-9 favorites | power-user nav | 📝 spec captured (appendix A) |
+| 6c | Notifications bell | alert center | 🔍 panel content unseen |
 | 7 | **View Controls** (`92\|5` label): QUICK PRESETS Tight/Normal/Wide · STRIKE RANGE slider · EXPIRATIONS Front 2/3/5/All + To Friday / To Next Friday / To OPEX / To Next OPEX / To Q-OPEX / To Next Q-OPEX · HIDE STRIKES Empty/Under/Off | grid density + column/row filtering | ✅ functional (date ladders 📝) |
 | 8 | **Node %** panel: PRESET Off/Focus/King · SAVED Custom/Save as · READ AS Value/% King · SIGN ±/Abs · DECIMALS 0-3 · TEXT SIZE + Auto · BOLD · LOW NODES Hide/Dim/Fade · MIN % KING slider · DIM TO · PALETTE ×7 · VELOCITY All/Selected · RAW HOVER · preview rig 6 cells | per-cell display semantics | ✅ core functional (TEXT SIZE/DIM TO/SAVED/RAW HOVER 📝) |
 | 9 | Center on Spot (target) | recenter | ✅ static |
@@ -50,7 +52,11 @@ Legend: ✅ in demo v3 · 📝 spec'd, builds in phase 4 · 🔍 needs deeper se
 | 26 | Row left edge bar green/red by row net exposure | row sentiment | ✅ |
 | 27 | `data-velocity-key="strike_expiry"` cell keys | velocity tracking | ✅ (attr present) |
 | 28 | Server node tiers: king / gatekeeper / pika / barney / significant / normal | classification | 📝 our names: king / wall / gatekeeper / significant / normal |
-| 29 | Cell hover raw value (RAW HOVER) + cell click detail | drill-down | 🔍 click behavior unobserved — deeper session |
+| 29 | **Cell click → detail panel** (swept 0930): header `Strike N` + expiry + sentiment chip (NEUTRAL), CURRENT VALUE + exposure direction ("Exposure Decreasing"), VALUE OVER TIME mini-chart, **RATE OF CHANGE table: 1/5/10/15 min + EXTENDED 1h/4h/1d** + velocity | per-cell drill-down | 📝 spec captured — v1 component |
+| 29b | Cell hover tooltip | RAW HOVER mode only | 🔍 none observed with default settings |
+| 29c | **Replay mode (Shift+R)**: scrubber (date + time), Step 1m, Speed 1x, data timestamp, "replay continues across trading sessions", Esc exit | historical playback | ⏭ v2 — spec captured |
+| 29d | Movement filter ↑/↓ behavior (chip-only vs cell filtering) | exact semantics | 🔍 dimming not observed — deeper session |
+| 29e | VEX mode: cell values swap to VEX scale (larger magnitude format) | metric semantics | ✅ noted (format $-202,907.8K style) |
 
 ## Other surfaces (checklists expand at build time)
 

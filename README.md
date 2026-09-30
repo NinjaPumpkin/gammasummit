@@ -56,8 +56,10 @@ anti-patterns that must NOT be carried over.
 | `docs/` | architecture, tiering, security, operations, ADRs |
 
 **Start here: [`docs/master-architecture.md`](docs/master-architecture.md)** —
-the floor plan. UI follows skylit.ai layout patterns
-(`docs/design-reference-skylit.md`).
+the floor plan — and [`docs/ultraplan.md`](docs/ultraplan.md) — the execution
+plan. UI follows skylit.ai layout patterns
+(`docs/design-reference-skylit.md`, parity gate:
+`docs/parity-checklist-skylit.md`).
 
 ## Naming conventions
 
