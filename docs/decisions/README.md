@@ -11,3 +11,4 @@ Naming: `NNNN_short_title.md` (zero-padded, chronological).
 |---|-------|--------|
 | 0001 | Project restart, scope, and data tiers | accepted |
 | 0002 | Frontend preview, staging, and auth-for-previews | accepted |
+| 0003 | Build stack: Vite SPA, TanStack, lightweight-charts, FastAPI, SQL-first migrations | accepted |

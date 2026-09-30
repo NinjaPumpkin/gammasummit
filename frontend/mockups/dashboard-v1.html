@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GammaSummit — Dashboard Mock v1</title>
+<style>
+  :root {
+    --bg: #070b12; --panel: #0e1622; --panel-2: #121c2b; --border: #1e2c40;
+    --text: #e6edf6; --muted: #8fa3ba; --dim: #5c7189;
+    --green: #22c55e; --green-dim: rgba(34,197,94,.16);
+    --red: #ef4444; --red-dim: rgba(239,68,68,.16);
+    --amber: #f59e0b; --blue: #3b82f6; --violet: #8b5cf6;
+    --mono: "SF Mono", "JetBrains Mono", ui-monospace, Menlo, monospace;
+    --sans: Inter, -apple-system, "Segoe UI", sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 13px; }
+  .num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+  /* ── header ─────────────────────────────── */
+  header { display: flex; align-items: center; gap: 16px; padding: 10px 18px;
+    background: linear-gradient(180deg,#0c1420,#0a111b); border-bottom: 1px solid var(--border); }
+  .brand { font-weight: 800; letter-spacing: 2px; font-size: 15px; }
+  .brand span { color: var(--amber); }
+  .chips { display: flex; gap: 6px; }
+  .chip { padding: 4px 12px; border-radius: 6px; background: var(--panel-2); border: 1px solid var(--border);
+    cursor: pointer; font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .chip.active { background: var(--blue); border-color: var(--blue); color: #fff; font-weight: 700; }
+  .modes { display: flex; gap: 2px; background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px; padding: 3px; }
+  .mode { padding: 5px 14px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: 700;
+    letter-spacing: 1px; color: var(--dim); }
+  .mode.active { background: var(--violet); color: #fff; }
+  .live { margin-left: auto; display: flex; align-items: center; gap: 14px; color: var(--muted); font-size: 12px; }
+  .live .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); display: inline-block;
+    margin-right: 5px; box-shadow: 0 0 8px var(--green); }
+
+  /* ── ticker strip ───────────────────────── */
+  .strip { display: flex; gap: 24px; padding: 10px 18px; background: var(--panel);
+    border-bottom: 1px solid var(--border); align-items: baseline; }
+  .strip .sym { font-size: 22px; font-weight: 800; font-family: var(--mono); }
+  .stat { display: flex; flex-direction: column; gap: 2px; }
+  .stat .k { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--dim); }
+  .stat .v { font-family: var(--mono); font-size: 15px; font-weight: 600; }
+  .up { color: var(--green); } .down { color: var(--red); }
+
+  /* ── grid layout ────────────────────────── */
+  .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 12px; padding: 14px 18px; }
+  .w { background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+    display: flex; flex-direction: column; overflow: hidden; }
+  .w-head { display: flex; align-items: center; gap: 8px; padding: 9px 12px;
+    background: var(--panel-2); border-bottom: 1px solid var(--border); }
+  .w-title { font-size: 11px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; }
+  .w-sub { color: var(--dim); font-size: 10px; }
+  .drag { margin-left: auto; color: var(--dim); cursor: grab; letter-spacing: 2px; }
+  .w-body { padding: 12px; flex: 1; }
+
+  .col-7 { grid-column: span 7; } .col-5 { grid-column: span 5; }
+  .col-4 { grid-column: span 4; } .col-8 { grid-column: span 8; }
+  .col-6 { grid-column: span 6; } .col-3 { grid-column: span 3; }
+
+  /* ── expiry tabs ────────────────────────── */
+  .tabs { display: flex; gap: 6px; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+  .tab { padding: 3px 10px; border-radius: 5px; font-size: 11px; font-family: var(--mono);
+    color: var(--muted); background: transparent; border: 1px solid transparent; cursor: pointer; }
+  .tab.active { background: var(--panel-2); border-color: var(--border); color: var(--amber); font-weight: 700; }
+
+  /* ── meatseeker grid ────────────────────── */
+  table { width: 100%; border-collapse: collapse; }
+  thead th { position: sticky; top: 0; background: var(--panel-2); color: var(--dim); font-size: 10px;
+    text-transform: uppercase; letter-spacing: 1px; padding: 7px 8px; text-align: right; }
+  thead th:first-child { text-align: center; }
+  tbody td { padding: 5px 8px; text-align: right; font-family: var(--mono); font-size: 12px;
+    border-top: 1px solid rgba(30,44,64,.5); }
+  tbody tr:hover { background: rgba(59,130,246,.07); }
+  td.strike { text-align: center; font-weight: 700; color: var(--text); }
+  tr.atm td { background: rgba(245,158,11,.10); }
+  tr.atm td.strike { color: var(--amber); }
+  .heat-pos { background: var(--green-dim); border-radius: 3px; }
+  .heat-neg { background: var(--red-dim); border-radius: 3px; }
+  .scroll { max-height: 430px; overflow-y: auto; }
+
+  /* ── charts ─────────────────────────────── */
+  .chart-note { display: flex; justify-content: space-between; color: var(--dim); font-size: 10px;
+    padding: 0 4px 6px; }
+
+  /* ── gex profile ────────────────────────── */
+  .profile-row { display: flex; align-items: center; gap: 8px; margin: 3px 0; }
+  .profile-row .lbl { width: 62px; text-align: center; font-family: var(--mono); font-size: 11px; }
+  .bar-wrap { flex: 1; height: 13px; display: flex; }
+  .bar-l { margin-left: auto; background: var(--red); border-radius: 2px 0 0 2px; }
+  .bar-r { background: var(--green); border-radius: 0 2px 2px 0; }
+  .bar-mid { width: 1px; background: var(--border); }
+
+  /* ── OI movers ──────────────────────────── */
+  .mover { display: flex; align-items: center; gap: 10px; padding: 7px 4px; border-top: 1px solid rgba(30,44,64,.5); }
+  .mover .t { font-family: var(--mono); font-weight: 700; width: 52px; }
+  .mover .s { font-family: var(--mono); color: var(--muted); width: 74px; font-size: 11px; }
+  .mover .d { margin-left: auto; font-family: var(--mono); font-weight: 700; }
+  .spark { width: 54px; height: 16px; }
+
+  /* ── ai analyst ─────────────────────────── */
+  .regime { padding: 8px 12px; border-radius: 8px; background: var(--red-dim); border: 1px solid var(--red);
+    color: var(--red); font-weight: 800; letter-spacing: 1px; text-align: center; margin-bottom: 10px; }
+  .conviction { height: 8px; border-radius: 4px; background: var(--panel-2); overflow: hidden; margin: 6px 0 12px; }
+  .conviction i { display: block; height: 100%; width: 72%; background: linear-gradient(90deg,var(--amber),var(--red)); }
+  .thesis { color: var(--muted); line-height: 1.65; font-size: 12px; }
+  .thesis b { color: var(--text); }
+
+  footer { padding: 10px 18px 26px; color: var(--dim); font-size: 11px; display: flex; gap: 18px; }
+  .badge { padding: 2px 8px; border: 1px solid var(--border); border-radius: 4px; }
+
+  @media (max-width: 1100px) {
+    .col-7, .col-5, .col-4, .col-8, .col-6, .col-3 { grid-column: span 12; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">GAMMA<span>SUMMIT</span></div>
+  <div class="chips">
+    <div class="chip active">SPY</div><div class="chip">QQQ</div>
+    <div class="chip">IWM</div><div class="chip">SPX</div>
+    <div class="chip">+ ticker</div>
+  </div>
+  <div class="modes">
+    <div class="mode active">CLOUTSEEKER</div>
+    <div class="mode">SPOTGAMMA</div>
+    <div class="mode">FATTE</div>
+  </div>
+  <div class="live">
+    <span><span class="dot"></span>LIVE</span>
+    <span class="num" id="lastupd">Last updated 15:42:07 ET</span>
+  </div>
+</header>
+
+<div class="strip">
+  <div class="sym">SPY</div>
+  <div class="stat"><span class="k">Spot</span><span class="v num">671.24</span></div>
+  <div class="stat"><span class="k">Change</span><span class="v num up">+2.18 (+0.33%)</span></div>
+  <div class="stat"><span class="k">GEX Flip</span><span class="v num" style="color:var(--amber)">668.50</span></div>
+  <div class="stat"><span class="k">Net GEX</span><span class="v num up">+3.42B</span></div>
+  <div class="stat"><span class="k">Call OI</span><span class="v num">14.2M</span></div>
+  <div class="stat"><span class="k">Put OI</span><span class="v num">11.8M</span></div>
+  <div class="stat"><span class="k">IV Rank</span><span class="v num">38</span></div>
+  <div class="stat"><span class="k">0DTE Vol</span><span class="v num">2.1M</span></div>
+</div>
+
+<div class="grid">
+
+  <!-- MEATSEEKER GRID -->
+  <div class="w col-7" style="grid-row: span 2;">
+    <div class="w-head">
+      <div class="w-title">MEATSEEKER Grid</div>
+      <div class="w-sub">strike-level gamma &amp; OI · descending</div>
+      <div class="drag">⠿</div>
+    </div>
+    <div class="tabs">
+      <div class="tab active">0DTE</div><div class="tab">OCT 3</div>
+      <div class="tab">OCT 17</div><div class="tab">NOV 21</div><div class="tab">ALL</div>
+    </div>
+    <div class="scroll">
+      <table>
+        <thead><tr>
+          <th>Strike</th><th>Call GEX</th><th>Put GEX</th><th>Net GEX</th>
+          <th>Call OI</th><th>Put OI</th><th>Δ OI</th><th>Vol</th>
+        </tr></thead>
+        <tbody id="meat"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- DDOI CHART -->
+  <div class="w col-5">
+    <div class="w-head">
+      <div class="w-title">DDOI — Dealer Directional Open Interest</div>
+      <div class="w-sub">intraday</div>
+      <div class="drag">⠿</div>
+    </div>
+    <div class="w-body">
+      <div class="chart-note"><span>09:30</span><span>11:00</span><span>12:30</span><span>14:00</span><span>16:00</span></div>
+      <svg id="ddoi" viewBox="0 0 560 350" style="width:100%;height:350px"></svg>
+    </div>
+  </div>
+
+  <!-- AI ANALYST -->
+  <div class="w col-5">
+    <div class="w-head">
+      <div class="w-title">AI Analyst</div>
+      <div class="w-sub">regime + thesis</div>
+      <div class="drag">⠿</div>
+    </div>
+    <div class="w-body">
+      <div class="regime">⚠ GAMMA SQUEEZE ZONE — 670–675</div>
+      <div style="color:var(--dim);font-size:10px;letter-spacing:1px">CONVICTION</div>
+      <div class="conviction"><i></i></div>
+      <div class="thesis">
+        <b>Setup:</b> Dealer gamma flips positive above <b>668.50</b>. Spot pinned in
+        high-gamma pocket; downside strikes show rising put OI into close.<br><br>
+        <b>Risk:</b> 0DTE call wall at <b>675</b> caps upside. Break below 668
+        flips regime to negative-gamma acceleration.<br><br>
+        <b>Flow:</b> Dark-pool prints cluster at 670–672 (institutional accumulation).
+        OI Movers: heavy 675C add (+84K) into close.
+      </div>
+    </div>
+  </div>
+
+  <!-- GEX PROFILE -->
+  <div class="w col-4">
+    <div class="w-head">
+      <div class="w-title">GEX Profile</div>
+      <div class="w-sub">by strike · net</div>
+      <div class="drag">⠿</div>
+    </div>
+    <div class="w-body" id="profile"></div>
+  </div>
+
+  <!-- OI MOVERS -->
+  <div class="w col-4">
+    <div class="w-head">
+      <div class="w-title">OI Movers</div>
+      <div class="w-sub">session Δ OI · top adds</div>
+      <div class="drag">⠿</div>
+    </div>
+    <div class="w-body" id="movers"></div>
+  </div>
+
+  <!-- FLOW TRIAGE -->
+  <div class="w col-4">
+    <div class="w-head">
+      <div class="w-title">Flow Triage</div>
+      <div class="w-sub">sweep / block / split</div>
+      <div class="drag">⠿</div>
+    </div>
+    <div class="w-body" id="flow"></div>
+  </div>
+
+</div>
+
+<footer>
+  <span class="badge">MOCK DATA — design review build</span>
+  <span>Widgets draggable in production build · first 3 expiries default · strikes descending</span>
+</footer>
+
+<script>
+/* ── seeded mock data ─────────────────────── */
+let seed = 42;
+const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+
+// MEATSEEKER rows — strikes descending around spot 671
+const meat = document.getElementById('meat');
+const strikes = [];
+for (let s = 685; s >= 655; s -= 1) strikes.push(s);
+strikes.forEach(s => {
+  const dist = Math.abs(s - 671);
+  const mag = Math.max(.05, 1 - dist / 18);
+  const cg = (rnd() * 420 + 20) * mag * (s >= 671 ? 1.4 : .7);
+  const pg = (rnd() * 380 + 20) * mag * (s < 671 ? 1.4 : .7);
+  const net = cg - pg;
+  const coi = Math.round(rnd() * 180000 * mag + 8000);
+  const poi = Math.round(rnd() * 150000 * mag + 6000);
+  const doi = Math.round((rnd() - .35) * 60000 * mag);
+  const vol = Math.round(rnd() * 320000 * mag + 4000);
+  const cls = s === 671 ? 'atm' : '';
+  const netCls = net >= 0 ? 'heat-pos' : 'heat-neg';
+  const netCol = net >= 0 ? 'up' : 'down';
+  meat.insertAdjacentHTML('beforeend', `<tr class="${cls}">
+    <td class="strike">${s}</td>
+    <td class="num up">${(cg/100).toFixed(1)}M</td>
+    <td class="num down">${(pg/100).toFixed(1)}M</td>
+    <td class="num ${netCls} ${netCol}">${net>=0?'+':''}${(net/100).toFixed(1)}M</td>
+    <td class="num">${(coi/1000).toFixed(0)}K</td>
+    <td class="num">${(poi/1000).toFixed(0)}K</td>
+    <td class="num ${doi>=0?'up':'down'}">${doi>=0?'+':''}${(doi/1000).toFixed(0)}K</td>
+    <td class="num">${(vol/1000).toFixed(0)}K</td>
+  </tr>`);
+});
+
+// DDOI chart
+(() => {
+  const svg = document.getElementById('ddoi');
+  const N = 78, pts = [];
+  let v = 0;
+  for (let i = 0; i < N; i++) {
+    v += (rnd() - .47) * 22;
+    v = Math.max(-60, Math.min(70, v));
+    pts.push(v);
+  }
+  const X = i => 20 + i * (520 / (N - 1));
+  const Y = val => 175 - val * 2.1;
+  const line = pts.map((p, i) => `${i ? 'L' : 'M'}${X(i).toFixed(1)},${Y(p).toFixed(1)}`).join(' ');
+  const area = `${line} L${X(N-1)},175 L${X(0)},175 Z`;
+  svg.innerHTML = `
+    <defs>
+      <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#22c55e" stop-opacity=".35"/>
+        <stop offset="100%" stop-color="#22c55e" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    ${[0,87.5,175,262.5,350].map(y => `<line x1="20" y1="${y}" x2="540" y2="${y}" stroke="#1e2c40" stroke-width="1"/>`).join('')}
+    <line x1="20" y1="175" x2="540" y2="175" stroke="#f59e0b" stroke-width="1" stroke-dasharray="5,4"/>
+    <path d="${area}" fill="url(#g1)"/>
+    <path d="${line}" fill="none" stroke="#22c55e" stroke-width="2"/>
+    <circle cx="${X(N-1)}" cy="${Y(pts[N-1])}" r="4" fill="#22c55e"/>
+    <text x="540" y="${Y(pts[N-1])-10}" fill="#22c55e" font-family="monospace" font-size="12" text-anchor="end">${pts[N-1].toFixed(1)}</text>`;
+})();
+
+// GEX profile bars
+(() => {
+  const el = document.getElementById('profile');
+  for (let s = 682; s >= 660; s -= 2) {
+    const mag = Math.max(.08, 1 - Math.abs(s - 671) / 14);
+    const net = (rnd() - (s > 671 ? .25 : .55)) * mag * 100;
+    const w = Math.abs(net) * 1.15;
+    el.insertAdjacentHTML('beforeend', `<div class="profile-row">
+      <div class="lbl num">${s}</div>
+      <div class="bar-wrap">
+        ${net < 0 ? `<div class="bar-l" style="width:${w/2}%"></div><div class="bar-mid"></div><div class="bar-r" style="width:0"></div>`
+                  : `<div class="bar-l" style="width:0"></div><div class="bar-mid"></div><div class="bar-r" style="width:${w/2}%"></div>`}
+      </div>
+    </div>`);
+  }
+})();
+
+// OI movers
+(() => {
+  const el = document.getElementById('movers');
+  const rows = [
+    ['SPY','675C',+84,'up'],['QQQ','600C',+61,'up'],['SPY','665P',+52,'up'],
+    ['SPX','6700C',+47,'up'],['IWM','245P',-38,'down'],['QQQ','590P',-29,'down'],
+    ['SPY','680C',+26,'up'],['SPY','660P',-21,'down'],
+  ];
+  rows.forEach(([t, s, d, dir]) => {
+    const spark = Array.from({length: 8}, () => 3 + rnd() * 13);
+    const sp = spark.map((y, i) => `<rect x="${i*7}" y="${16-y}" width="5" height="${y}" fill="var(--${dir==='up'?'green':'red'})" opacity="${.35 + i*.09}"/>`).join('');
+    el.insertAdjacentHTML('beforeend', `<div class="mover">
+      <div class="t">${t}</div><div class="s">${s}</div>
+      <svg class="spark" viewBox="0 0 54 16">${sp}</svg>
+      <div class="d ${dir}">${d>0?'+':''}${d}K</div>
+    </div>`);
+  });
+})();
+
+// Flow triage
+(() => {
+  const el = document.getElementById('flow');
+  const rows = [
+    ['SWEEP','SPY 672C','2.4M','up','premium · ask-side'],
+    ['BLOCK','SPY 670P','1.1M','down','mid · single print'],
+    ['SWEEP','QQQ 600C','890K','up','split · 14 prints'],
+    ['SPLIT','SPX 6710C','3.2M','up','premium · 0DTE'],
+  ];
+  rows.forEach(([kind, instr, val, dir, note]) => {
+    const color = kind === 'SWEEP' ? 'var(--amber)' : kind === 'BLOCK' ? 'var(--blue)' : 'var(--violet)';
+    el.insertAdjacentHTML('beforeend', `<div class="mover">
+      <div class="t" style="color:${color};font-size:10px;letter-spacing:1px">${kind}</div>
+      <div class="s" style="width:88px">${instr}</div>
+      <div class="d ${dir}" style="margin-left:14px">${val}</div>
+    </div><div style="color:var(--dim);font-size:10px;padding:0 4px 4px 66px">${note}</div>`);
+  });
+})();
+
+// live clock on "last updated"
+setInterval(() => {
+  const t = new Date().toLocaleTimeString('en-US', { hour12: false, timeZone: 'America/New_York' });
+  document.getElementById('lastupd').textContent = `Last updated ${t} ET`;
+}, 1000);
+</script>
+</body>
+</html>
