@@ -42,3 +42,41 @@ flag-day switch — dual-run, measure, then flip.
 
 VPS = Python 3.10.12. All GammaSummit code 3.10-compatible until the VPS
 changes (recorded in `docs/decisions/`).
+
+## Backend extraction readiness (assessed 2026-09-30)
+
+Verdict: **ready to EXTRACT logic, not to copy code.** SignalForge `v3/` is a
+coupled monolith (22 MB) — only `p2_gamma/` (ingest + data layer), parts of
+`p2_market/`, and `lib/` scorers (greek_scorer, gamma_vanna_scorer, flow_triage,
+iv_percentile) are product scope. `p1_discord`, `p3_execution`, `p4_telegram`,
+`p5_brain`, `p6_analysts` are NOT gammasummit v1 (stay in SignalForge).
+Extraction happens in Ultraphase P2 into `backend/ingest|jobs|core`, per the
+reuse map above. Port blockers to handle in P1: 30 KB `config.py` env coupling,
+`.env` handling, STDB legacy refs, 3.10 syntax floor.
+
+## X10 Pro external disk — cold storage layout (created 2026-09-30)
+
+Root: `/Volumes/X10 Pro/`. GammaSummit uses ONLY:
+
+```
+gammasummit/                       ← new canonical cold-storage root
+├── t3/gamma/                      # raw full-fidelity snapshots (post-48h export)
+│   └── ticker=<T>/date=<YYYY-MM-DD>/*.parquet   (hive-partitioned — DuckDB pruning)
+├── t3/flow/                       # flow/darkpool cold archives
+├── t3/rollups/                    # T2 archives aged out of Postgres (>90d–1yr)
+├── t3/manifests/                  # export manifests (counts, min/max ts, checksums)
+├── backups/                       # DB dumps, encrypted config backups
+├── research/                      # .duckdb files, backtest outputs
+└── legacy/                        # SignalForge consolidation after cutover
+```
+
+Pre-existing X10 folders (read-only inputs / frozen until cutover — do NOT
+delete or restructure):
+
+| Folder | Size | Role |
+|---|---|---|
+| `leandata/` | 152 GB | seed archive: `parquet/` (options_eod, options_minute, stock_1min, stock_daily, index_*, cboe_close) + `supabase_archive/` (phx csv.gz + vexatrader SQL dump) → migrates INTO `gammasummit/t3/` |
+| `SignalForge Archive/` | 5.5 GB | pre-cleanup DBs, gamma_copilot copies, phx_flow_alerts |
+| `SignalForge-backups/` | 1.2 GB | snapshot-2026-06-17 |
+| `SignalForge-Migration/` | 162 GB | full SignalForge data copy |
+| `GITPROJECTS/SignalForge*` | — | repo copies (backup) |
