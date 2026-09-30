@@ -10,3 +10,4 @@ Naming: `NNNN_short_title.md` (zero-padded, chronological).
 | # | Title | Status |
 |---|-------|--------|
 | 0001 | Project restart, scope, and data tiers | accepted |
+| 0002 | Frontend preview, staging, and auth-for-previews | accepted |
