@@ -153,18 +153,19 @@ class TestNodeMath(unittest.TestCase):
         self.weights = {"2026-10-15": 1.5, "2026-11-20": -2.0}
 
     def test_node_values_sum_over_expiries(self):
-        v = exp.node_values(self.batch, self.weights)
+        # p = 1.0 = established g basis (E0.6 backward-compat switch, spec §5b)
+        v = exp.node_values(self.batch, self.weights, p=1.0)
         # V(100) = 1.5*6 + (-2.0)*2 = 5.0 ; V(110) = 1.5*(-5) + (-2.0)*(-3) = -1.5
         self.assertEqual(v[100], 5.0)
         self.assertEqual(v[110], -1.5)
 
     def test_cells_and_v_consistency(self):
-        cells = exp.cell_values(self.batch, self.weights)
+        cells = exp.cell_values(self.batch, self.weights, p=1.0)
         self.assertEqual(cells[(100.0, "2026-10-15")], 9.0)
         self.assertEqual(cells[(110.0, "2026-10-15")], -7.5)
         self.assertEqual(cells[(100.0, "2026-11-20")], -4.0)
         self.assertEqual(cells[(110.0, "2026-11-20")], 6.0)
-        v = exp.node_values(self.batch, self.weights)
+        v = exp.node_values(self.batch, self.weights, p=1.0)
         for s in (100.0, 110.0):
             self.assertEqual(v[s], sum(c for (st, _e), c in cells.items() if st == s))
 
@@ -187,7 +188,7 @@ class TestNodeMath(unittest.TestCase):
         # spec §6.7: strikes match by value, never positionally
         rows = list(reversed(grid_rows()))
         batch = exp.normalize_batch(rows, ts="2026-09-30T14:30:00+00:00", spot=105.0)
-        v = exp.node_values(batch, self.weights)
+        v = exp.node_values(batch, self.weights, p=1.0)
         self.assertEqual(v[100], 5.0)
         self.assertEqual(v[110], -1.5)
 
@@ -208,6 +209,102 @@ class TestNodeMath(unittest.TestCase):
         e = len(w)
         self.assertTrue(math.isclose(sum(abs(x) for x in w.values()) / e, 1.0))
         self.assertTrue(math.isclose(w["2026-11-20"] / w["2026-10-15"], -2.0 / 1.5))
+
+
+class TestShapeTransform(unittest.TestCase):
+    """E0.6 within-cell power basis (spec §5b, MAG_SHAPE_P = 1.25).
+
+    Hand-computed vectors on grid_rows (independent arithmetic):
+        e1 col: g = {100: 6, 110: -5}, m = 6
+            h = {100: 6*(6/6)^1.25 = 6.0, 110: -6*(5/6)^1.25 = -4.777213961021834}
+        e2 col: g = {100: 2, 110: -3}, m = 3
+            h = {100: 3*(2/3)^1.25 = 1.8072040072196895, 110: -3*(3/3)^1.25 = -3.0}
+        C = a_e * h with a = {e1: 1.5, e2: -2.0}; V = sum_e C.
+    """
+
+    def setUp(self):
+        self.batch = exp.normalize_batch(
+            grid_rows(), ts="2026-09-30T14:30:00+00:00", spot=105.0)
+        self.weights = {"2026-10-15": 1.5, "2026-11-20": -2.0}
+
+    def test_constant(self):
+        self.assertEqual(exp.MAG_SHAPE_P, 1.25)
+
+    def test_p1_reduces_exactly_to_g_basis(self):
+        # acceptance: p = 1 is the current g basis, bit-for-bit
+        g_cells = {(100.0, "2026-10-15"): 6.0, (110.0, "2026-10-15"): -5.0,
+                   (100.0, "2026-11-20"): 2.0, (110.0, "2026-11-20"): -3.0}
+        self.assertEqual(exp.cell_basis(self.batch, p=1.0), g_cells)
+        self.assertEqual(
+            exp.cell_values(self.batch, self.weights, p=1.0),
+            {k: self.weights[k[1]] * g for k, g in g_cells.items()})
+        self.assertEqual(
+            exp.node_values(self.batch, self.weights, p=1.0),
+            {100.0: 1.5 * 6.0 + (-2.0) * 2.0,
+             110.0: 1.5 * (-5.0) + (-2.0) * (-3.0)})
+        # the transform itself: exact early return for any input
+        for g, m in ((6.0, 6.0), (-5.0, 6.0), (0.0, 0.0), (3.25, 7.5)):
+            self.assertEqual(exp.shape_transform(g, m, p=1.0), g)
+
+    def test_hand_computed_p125(self):
+        h = exp.cell_basis(self.batch)  # default MAG_SHAPE_P = 1.25
+        self.assertTrue(math.isclose(h[(100.0, "2026-10-15")], 6.0, rel_tol=1e-12), h)
+        self.assertTrue(math.isclose(h[(110.0, "2026-10-15")], -4.777213961021834,
+                                     rel_tol=1e-12), h)
+        self.assertTrue(math.isclose(h[(100.0, "2026-11-20")], 1.8072040072196895,
+                                     rel_tol=1e-12), h)
+        self.assertTrue(math.isclose(h[(110.0, "2026-11-20")], -3.0, rel_tol=1e-12), h)
+        c = exp.cell_values(self.batch, self.weights)  # C = a_e * h
+        self.assertTrue(math.isclose(c[(100.0, "2026-10-15")], 9.0, rel_tol=1e-12), c)
+        self.assertTrue(math.isclose(c[(110.0, "2026-10-15")], -7.165820941532751,
+                                     rel_tol=1e-12), c)
+        self.assertTrue(math.isclose(c[(100.0, "2026-11-20")], -3.614408014439379,
+                                     rel_tol=1e-12), c)
+        self.assertTrue(math.isclose(c[(110.0, "2026-11-20")], 6.0, rel_tol=1e-12), c)
+        v = exp.node_values(self.batch, self.weights)  # V = sum_e C
+        self.assertTrue(math.isclose(v[100.0], 5.385591985560621, rel_tol=1e-12), v)
+        self.assertTrue(math.isclose(v[110.0], -1.1658209415327514, rel_tol=1e-12), v)
+        for s in (100.0, 110.0):
+            self.assertTrue(math.isclose(
+                v[s], sum(val for (st, _e), val in c.items() if st == s),
+                rel_tol=1e-12), (s, v))
+
+    def test_zero_safe(self):
+        # spec §5b edge case: m_e = 0 (all g zero in the column) -> h = 0
+        rows = [{"strike": 100, "expiry_date": "2026-10-15", "call_gex": 0, "put_gex": 0},
+                {"strike": 110, "expiry_date": "2026-10-15", "call_gex": 3, "put_gex": 3}]
+        batch = exp.normalize_batch(rows, ts="2026-09-30T14:30:00+00:00", spot=105.0)
+        h = exp.cell_basis(batch)
+        self.assertEqual(h[(100.0, "2026-10-15")], 0.0)
+        self.assertEqual(h[(110.0, "2026-10-15")], 0.0)
+        self.assertEqual(exp.shape_transform(0.0, 0.0), 0.0)
+        self.assertEqual(exp.shape_transform(5.0, 0.0), 0.0)  # m = 0 -> h = 0
+        self.assertEqual(exp.shape_column({100.0: 0.0}), {100.0: 0.0})
+        v = exp.node_values(batch, {"2026-10-15": 2.0})
+        self.assertEqual(v, {100.0: 0.0, 110.0: 0.0})
+
+    def test_sign_and_column_magnitude(self):
+        # spec §6.4 sign preserved exactly; max|h| == m_e (g-scale magnitudes)
+        cols = {"e1": {100.0: 6.0, 110.0: -5.0}, "e2": {100.0: 2.0, 110.0: -3.0}}
+        for name, col in cols.items():
+            hh = exp.shape_column(col)
+            sgn = lambda x: (1.0 if x > 0 else (-1.0 if x < 0 else 0.0))  # noqa: E731
+            self.assertEqual({s: sgn(x) for s, x in hh.items()},
+                             {s: sgn(x) for s, x in col.items()}, name)
+            self.assertEqual(max(abs(x) for x in hh.values()),
+                             max(abs(x) for x in col.values()), name)
+        # single-cell column: |g| == m_e -> h == g exactly
+        self.assertEqual(exp.shape_column({100.0: -3.5}), {100.0: -3.5})
+
+    def test_selection_unchanged_on_fixture(self):
+        # king/star selection on the p = 1.25 basis (same as g on this fixture)
+        v = exp.node_values(self.batch, self.weights)
+        c = exp.cell_values(self.batch, self.weights)
+        sel = exp.select_nodes(v, c)
+        self.assertEqual(sel["king"], 100)
+        self.assertEqual(sel["stars"], {"2026-10-15": 100, "2026-11-20": 110})
+        self.assertEqual(sel["global_star"], {"strike": 100, "expiry": "2026-10-15",
+                                              "value": 9.0})
 
 
 class TestBatchHygiene(unittest.TestCase):

@@ -131,17 +131,19 @@ class TestRecursionInvariants(unittest.TestCase):
         self.assertEqual(st["q_g"][(100.0, E1)], 6.0)
 
     def test_baseline_reduction_exact(self):
-        # beta = (1, 0, ...) -> stateful model == E0.3 model exactly
-        # (property of the model form; the default STATE_BETA is the fitted one)
+        # beta = (1, 0, ...) -> stateful model == E0.3 g-basis model exactly
+        # (property of the model form; the default STATE_BETA is the fitted one.
+        # The §10 model stays on the g basis -- E0.6 MAG_SHAPE_P does not apply,
+        # so the comparison uses cell_values/node_values with p = 1.0.)
         b0 = (1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
         st = exp.update_cell_state(batch(rows2(), TS2), exp.new_cell_state())
         b = batch(rows2(), TS2)
         w = {E1: 2.5}
-        v0 = exp.node_values(b, w)
+        v0 = exp.node_values(b, w, p=1.0)
         v1 = exp.stateful_node_values(b, w, st, beta=b0)
         for s, x in v0.items():
             self.assertTrue(math.isclose(v1[s], x, rel_tol=1e-12), (s, x, v1[s]))
-        c0 = exp.cell_values(b, w)
+        c0 = exp.cell_values(b, w, p=1.0)
         c1 = exp.stateful_cell_values(b, w, st, beta=b0)
         for k, x in c0.items():
             self.assertTrue(math.isclose(c1[k], x, rel_tol=1e-12), (k, x, c1[k]))

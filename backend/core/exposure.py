@@ -5,9 +5,14 @@ docs/build/cross-expiry-layer-spec.md). Zero code copied from any reference
 trading system; zero external trading-system imports. Production inputs are
 UW `gamma_data_v2` rows ONLY (columns listed in UW_COLUMNS).
 
-Value model (spec §2):
+Value model (spec §2; within-cell power basis per cell-model doc §5b):
     g(s,e,t) = call_gex - put_gex          within-expiry net gex (established)
-    C(s,e,t) = a_e(t) * g(s,e,t)           cell value
+    m_e(t)   = max_s |g(s,e,t)|            per-column magnitude (zero-safe)
+    h(s,e,t) = m_e * sgn(g) * |g/m_e|^p    within-cell shape transform (E0.6,
+                                          p = MAG_SHAPE_P = 1.25; p = 1
+                                          reduces EXACTLY to h = g; m_e = 0
+                                          -> h = 0)
+    C(s,e,t) = a_e(t) * h(s,e,t)           cell value
     V(s,t)   = sum_e C(s,e,t)              node value (established, exact)
     star     = argmax_(s,e) |C|            per-expiry star = column max
     king     = argmax_s |V(s,t)|           established
@@ -93,6 +98,18 @@ BATCH_INTERVAL_S: float = 2.0 * MEDIAN_CADENCE_S
 # t_b157a485). gamma = 1.0 reproduces the pre-E0.5b model exactly.
 MAG_GAMMA: float = 0.7
 
+# Provenance: E0.6 power-basis shape transform (cell-model doc §5b, card
+# t_3a0b0ae0 -> t_1f5bc921). Within-column power class h = m_e * sgn(g) *
+# |g/m_e|^p; p selected on the shape-metric grid (median within-column cos^2
+# 0.0941 -> 0.0972, data/e06/accum/nonlinear_probe.json) and confirmed
+# INDEPENDENTLY on V-mode metrics + oracle bounds (data/e06/eval_models_all.json:
+# oracle_joint exact 68.60% -> 71.79%, bound broken). NOT tuned to king exact
+# (flat 35.42% -> 35.13% -- the shippable gap is the cross-expiry weight layer).
+# PILOT-GRADE on the 3 Tier-A days; refit p in the daily refit
+# (python3 scripts/e06_cell_model.py fit) as days accrue past 20 (gate card
+# t_b157a485). p = 1.0 reduces EXACTLY to the g basis (backward-compat switch).
+MAG_SHAPE_P: float = 1.25
+
 # UW gamma_data_v2 columns consumed (spec §8.3). Other columns are ignored.
 UW_COLUMNS: Tuple[str, ...] = (
     "strike", "expiry_date", "call_gex", "put_gex", "call_oi", "put_oi",
@@ -135,6 +152,50 @@ def _f(row: Row, key: str) -> float:
 def net_gex(row: Row) -> float:
     """g(s,e,t) = call_gex - put_gex (established within-expiry math, spec §2)."""
     return _f(row, "call_gex") - _f(row, "put_gex")
+
+
+# ------------------------------------------------------- shape transform (§5b)
+
+def shape_transform(g: float, m_e: float, p: float = MAG_SHAPE_P) -> float:
+    """Within-cell shape transform h = m_e * sgn(g) * |g / m_e|^p (spec §5b).
+
+    - `m_e` is the per-column magnitude max_s |g(s,e,t)| (see `shape_column`).
+    - p = 1.0 reduces EXACTLY to h = g (early return, bit-for-bit).
+    - Zero-safe: m_e == 0 -> h = 0.0 (spec §5b edge case).
+    - Sign convention (spec §6.4) untouched: sign(h) == sign(g) exactly.
+    """
+    if p == 1.0:
+        return g
+    if m_e <= 0.0:
+        return 0.0
+    return math.copysign(m_e * (abs(g) / m_e) ** p, g)
+
+
+def shape_column(col: Mapping[float, float], p: float = MAG_SHAPE_P) -> Dict[float, float]:
+    """Shape transform of one expiry column: m_e = max_s |g(s,e)| (zero-safe).
+
+    Column magnitude is kept g-scale (max|h| == m_e), so the cross-expiry psi
+    layer sees unchanged column magnitudes (cell-model doc §5b).
+    """
+    m_e = max((abs(v) for v in col.values()), default=0.0)
+    return {s: shape_transform(v, m_e, p) for s, v in col.items()}
+
+
+def cell_basis(batch: Mapping, p: float = MAG_SHAPE_P) -> Dict[Tuple[float, str], float]:
+    """h(s,e,t) per cell (spec §5b): g aggregated per (strike, expiry), then
+    the per-column shape transform. Duplicate rows for one cell aggregate first
+    (one g per cell); missing rows unchanged (spec §6.6/§6.7).
+    """
+    cols: Dict[str, Dict[float, float]] = {}
+    for row in batch["rows"]:
+        e, s = row["expiry_date"], row["strike"]
+        col = cols.setdefault(e, {})
+        col[s] = col.get(s, 0.0) + net_gex(row)
+    out: Dict[Tuple[float, str], float] = {}
+    for e, col in cols.items():
+        for s, h in shape_column(col, p).items():
+            out[(s, e)] = h
+    return out
 
 
 # ---------------------------------------------------------------- batch
@@ -314,21 +375,27 @@ def cross_expiry_weights(batch: Mapping, state: Mapping[str, float],
 
 # ---------------------------------------------------------------- outputs
 
-def cell_values(batch: Mapping, weights: Mapping[str, float]) -> Dict[Tuple[float, str], float]:
-    """C(s,e,t) = a_e(t) * g(s,e,t) for every batch (strike, expiry) pair."""
-    cells: Dict[Tuple[float, str], float] = {}
-    for row in batch["rows"]:
-        key = (row["strike"], row["expiry_date"])
-        cells[key] = cells.get(key, 0.0) + weights.get(row["expiry_date"], 0.0) * net_gex(row)
-    return cells
+def cell_values(batch: Mapping, weights: Mapping[str, float],
+                p: float = MAG_SHAPE_P) -> Dict[Tuple[float, str], float]:
+    """C(s,e,t) = a_e(t) * h(s,e,t) for every batch (strike, expiry) pair.
+
+    h is the within-cell power basis (spec §5b, `cell_basis`); p = 1.0 gives
+    the established C = a_e * g exactly.
+    """
+    return {key: weights.get(key[1], 0.0) * h
+            for key, h in cell_basis(batch, p).items()}
 
 
-def node_values(batch: Mapping, weights: Mapping[str, float]) -> Dict[float, float]:
-    """V(s,t) = sum_e a_e(t) * g(s,e,t) — per-strike node value (spec §8.1)."""
+def node_values(batch: Mapping, weights: Mapping[str, float],
+                p: float = MAG_SHAPE_P) -> Dict[float, float]:
+    """V(s,t) = sum_e a_e(t) * h(s,e,t) — per-strike node value (spec §8.1).
+
+    h is the within-cell power basis (spec §5b, `cell_basis`); p = 1.0 gives
+    the established V = sum_e a_e * g exactly.
+    """
     values: Dict[float, float] = {}
-    for row in batch["rows"]:
-        s = row["strike"]
-        values[s] = values.get(s, 0.0) + weights.get(row["expiry_date"], 0.0) * net_gex(row)
+    for (s, _e), h in cell_basis(batch, p).items():
+        values[s] = values.get(s, 0.0) + weights.get(_e, 0.0) * h
     return values
 
 
@@ -380,8 +447,12 @@ def display_weights(weights: Mapping[str, float]) -> Dict[str, float]:
 #              + (b6*d(s) + b7*r(s) + b8*tau(s)) / E(t)
 #   V(s,t)   = sum_e C(s,e,t)
 #
-# With STATE_BETA == (1, 0, ..., 0) this reduces EXACTLY to the §2 baseline
-# C = a_e * g. State variables (spec §10.2): per-cell gex/flow EWMAs with
+# With STATE_BETA == (1, 0, ..., 0) this reduces EXACTLY to the g-basis §2
+# model C = a_e * g. The E0.6 power basis (MAG_SHAPE_P) does NOT apply to the
+# §10 model: STATE_BETA was fitted on the g basis (data/e05a/state_fit.json)
+# and §5b scopes the shape transform to the §2 cell model — compare against
+# cell_values/node_values with p = 1.0.
+# State variables (spec §10.2): per-cell gex/flow EWMAs with
 # time-aware decay, per-expiry rolling ceiling/floor of G_e within the session
 # day, and node interaction counts (touched / rejected / delivered) from the
 # batch-resolution spot path. State survives gaps (never reset — §10.4.2).
@@ -566,8 +637,9 @@ def stateful_cell_values(batch: Mapping, weights: Mapping[str, float], state: Ma
 
 __all__ = [
     "THETA", "FEATURE_ORDER", "LAMBDA_BATCH", "LAMBDA_5S", "MEDIAN_CADENCE_S",
-    "BATCH_INTERVAL_S", "UW_COLUMNS", "MAG_GAMMA",
-    "parse_ts", "net_gex", "normalize_batch", "expiry_features", "psi_weights",
+    "BATCH_INTERVAL_S", "UW_COLUMNS", "MAG_GAMMA", "MAG_SHAPE_P",
+    "parse_ts", "net_gex", "shape_transform", "shape_column", "cell_basis",
+    "normalize_batch", "expiry_features", "psi_weights",
     "cross_expiry_weights", "cell_values", "node_values", "select_nodes",
     "display_weights",
     "STATE_FEATURE_ORDER", "LAMBDA_CELL", "STATE_BETA",
