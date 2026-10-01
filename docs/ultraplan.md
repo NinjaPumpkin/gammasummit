@@ -73,7 +73,8 @@ preview workflow (ADR 0002) from commit 1.
 ### P5 — Port + cutover (WS E)
 Work: dual-write shadow from SignalForge ingest; 2-week reconciliation
 (daily diff reports via DuckDB federation `postgres` extension); endpoint
-flip; SignalForge → read-only → archive.
+flip; SignalForge → read-only → archive. Full checklist incl. VPS swap,
+file removal policy and dependency hardening: `docs/offboarding-signalforge.md`.
 - **DoD:** 10 consecutive trading days of zero material diffs; rollback
   rehearsed; `gammasummit` = production.
 
