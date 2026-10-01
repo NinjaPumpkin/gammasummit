@@ -5,20 +5,20 @@ sub afterwards, drop Skylit). Started 2026-09-30. Objective: fit the missing
 cross-expiry/dynamic layer so UW data → Skylit nodes at **≤10% error** (owner
 bar), then run UW-only.
 
-## Limits & rates (verified 2026-09-30, docs + developer console)
+## Limits & rates (verified 2026-09-30, docs + live `GET /v1/account`)
 
 | Item | Value |
 |---|---|
-| Account | lapcheong · purchased credits 0 · free grant **5,000** |
-| Plan credits | Pro monthly API credits used first, reset 1st ET (Pro = 100,000/mo per announcement) |
+| Account | `cus_21d98fe0343721f1de691ef6` · active · apiEligible |
+| Credits | **105,000** = 100K included (period 2026-09, **resets 1st ET**) + 5K earned |
+| Rate limits | **120 req/min per key**, 5 keys, 10 symbols/heatmap call, 10 stream symbols (10 concurrent), historicalInFlight 2, streams 60 min |
 | Heatmap / GEX levels | **1 credit** / call (≤10 symbols) |
-| Historical replay `/v1/historical` | **5 credits** / call |
-| **Historical range `/v1/historical/range`** | **25 credits** / call — every frame (1s where available) in a ≤15-min window, ≤5 symbols |
-| Live stream | 1 credit / symbol to open + 1 / symbol / minute; 1-hour max per connection |
+| Historical replay `/v1/historical` | **5 credits** / call — `layout=matrix` returns **per-strike × per-expiry value grid + nodeType per strike** = the entire heatmap state at any instant (back to 2023-03-28). `expirations=` selects exact expiry sets. |
+| **Historical range `/v1/historical/range`** | **25 credits** / ≤15-min window — every frame (1s where available), ≤5–10 symbols, per-strike netted values |
+| Live stream | 1 credit / symbol to open + 1 / symbol / minute |
 | Flowseeker | 1–5 credits / call |
-| Rate limits | plan-dependent (`GET /v1/account` → `data.limits`); invite = 60 req/min; standard = 120/min; /v1/heatmap cached 5s |
 | Failures | all 4xx/5xx refunded — retries free |
-| Archive | Pro historical back to **2023-03-28** |
+| Attribution | "Data: Skylit" + link required by API terms (see `meta.attribution`) |
 
 ## The killer tool: historical range
 
