@@ -18,9 +18,18 @@ import argparse, gzip, json, os, random, sys, time, urllib.request, urllib.parse
 from datetime import datetime, timedelta, timezone
 
 API = "https://api.skylit.ai"
-OUT_ROOT = "/Volumes/X10 Pro/gammasummit/t3/re/raw"
+X10_ROOT = "/Volumes/X10 Pro/gammasummit/t3/re/raw"
+LOCAL_STAGING = "/Users/admin/Desktop/Github Projects/gammasummit/data/re-staging"
 RTH_START = (13, 30)   # 9:30 ET
 RTH_END = (20, 0)      # 16:00 ET
+
+
+def out_root():
+    """X10 when mounted, local staging otherwise (never lose captures to an
+    unplugged disk). Staged files are rsync'd to X10 by the mover below."""
+    if os.path.isdir("/Volumes/X10 Pro"):
+        return X10_ROOT
+    return LOCAL_STAGING
 
 
 def get_key():
@@ -80,17 +89,16 @@ def day_window(date_str, step, metrics):
 def out_path(root, kind, metric, date_str, t):
     return os.path.join(root, kind, metric, date_str, t.strftime("%H%M%S") + ".json.gz")
 
-
 def run_matrix(args, key):
     metrics = args.metrics.split(",")
     ticks = day_window(args.date, args.step, metrics)
-    os.makedirs(OUT_ROOT, exist_ok=True)
-    man = open(os.path.join(OUT_ROOT, "capture_manifest.jsonl"), "a")
+    os.makedirs(out_root(), exist_ok=True)
+    man = open(os.path.join(out_root(), "capture_manifest.jsonl"), "a")
     done = skipped = 0
     for t in ticks:
         ts = t.strftime("%Y-%m-%dT%H:%M:%SZ")
         for metric in metrics:
-            p = out_path(OUT_ROOT, "matrix", metric, args.date, t)
+            p = out_path(out_root(), "matrix", metric, args.date, t)
             if os.path.exists(p):
                 skipped += 1
                 continue
@@ -114,13 +122,13 @@ def run_matrix(args, key):
 
 def run_range(args, key):
     d = datetime.fromisoformat(args.date).replace(tzinfo=timezone.utc)
-    man = open(os.path.join(OUT_ROOT, "capture_manifest.jsonl"), "a")
+    man = open(os.path.join(out_root(), "capture_manifest.jsonl"), "a")
     t = d.replace(hour=RTH_START[0], minute=RTH_START[1])
     end = d.replace(hour=RTH_END[0], minute=RTH_END[1])
     done = skipped = 0
     while t < end:
         w_end = min(t + timedelta(minutes=15), end)
-        p = out_path(OUT_ROOT, "range", "gamma", args.date, t)
+        p = out_path(out_root(), "range", "gamma", args.date, t)
         if os.path.exists(p):
             skipped += 1
         else:
