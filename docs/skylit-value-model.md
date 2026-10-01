@@ -84,6 +84,36 @@ size term). Best family:
   theirs; but NODE LOCATION (what the user cares about) is close.
 - Remaining gap (27% king misses) is the dynamic state — see calibration path.
 
+## Verdict 4 — same-instant rescore + diagnosis (2026-09-30 night)
+
+Root-cause find: earlier sweeps were contaminated — capture harness (`fetch_phx_chain`,
+free endpoint) stored chains ~4 days stale vs their live grid. Re-scored over
+`gamma_data_v2` snapshots aligned within seconds of capture (10 pairs, 59,730
+rows). Results + rank diagnostics (`skylit_rescore_sameinstant.py`,
+`skylit_diagnose_rank.py`):
+
+1. **Star definition SOLVED (21/21)**: star = max |value| cell of the grid
+   (also per-expiry max). Values signed; scale-free target.
+2. **Within-column strike selection SOLVED**: `net_gex = call_gex − put_gex`
+   (our live UW aggregates) ranks their star **median #2 within its own expiry
+   column, top-3 75%**. The per-strike calculation is essentially theirs.
+3. **Cross-expiry selection is the gap**: global king exact = 2–3/10. Their
+   column-magnitude ratios (1.2→13.3 intraday) match no static gex/oi/vol/flow
+   factor and DTE power laws fail → cross-expiry weighting is their dynamic
+   layer (consistent with the 55M→231M scale-swing finding).
+4. Strike ±10pt best 55% (stale-data sweep) / exact king 20–30% same-instant.
+
+**Status vs owner bar (≤10% node error): NOT MET yet.** Strike-level nodes
+close (top-3 75% in column); the king placement needs the cross-expiry layer.
+
+Path to ≤10% (P0 workpackage #1):
+- pair our own 2-min `gamma_data_v2` snapshots with their `/v1/historical`
+  1s-replay values as TARGET (sanctioned API, owner's key)
+- fit the cross-expiry weighting with temporal features (Δgex 5m/30m/1d,
+  flow history from `flow_scores`, OI migration `prev_oi`) — the dynamic terms
+- acceptance: king exact ≥ 90% (≤10% error) over ≥ 20 session-days
+- implementation: `backend/core/exposure.py` written fresh in gammasummit
+
 ## Owner confidence gate (2026-09-30, hard)
 
 "Calculations NOT copied from SignalForge — derived fresh, verified against
