@@ -38,6 +38,33 @@ that keeps research alive).
 - MacBooks are not archival storage — they churn (reinstalls, travel). The
   authoritative copies are X10 + B2/R2; laptops are the convenience layer.
 
+## Cloud object storage instead of laptop copies? (owner 2026-09-30)
+
+Yes for the offsite/authoritative layer — and it upgrades the architecture:
+**DuckDB `httpfs` reads Parquet straight from object storage** (extension
+already adopted in the audit) → cold tier queryable from ANY machine with no
+X10 attached, and `cache_httpfs` keeps hot slices local.
+
+Monthly cost at ~370 GB (leandata 152 + migration 162 + archive 5.5 + t3):
+
+| Option | Storage/mo | Egress on full restore | Remote DuckDB reads | Verdict |
+|---|---|---|---|---|
+| **Cloudflare R2** | ~$5.55 | **$0** | free (zero egress) | ✅ **preferred** — queryable cold tier |
+| **Backblaze B2** | ~$2.20 | free up to 3× stored, then $0.01/GB | cheap | ✅ cheapest pure archive |
+| AWS S3 Standard | ~$8.50 | **$0.09/GB ≈ $33** per full restore | costly | ❌ 4× B2 + punitive egress |
+| AWS Glacier Deep Archive | ~$0.37 | $0.02/GB + 12–48h wait | unusable (slow) | ❌ dead-archive only |
+
+Revised topology (simpler than 4 copies):
+
+| Copy | Role |
+|---|---|
+| **X10** | fast local cold tier (backtests, RE datasets) |
+| **R2 (or B2)** | authoritative offsite + **remote-queryable** (DuckDB httpfs) |
+| **MacBook Pro compact set** | optional convenience (code + manifests + fit constants — <5 GB); skip Air entirely if you want less to manage |
+
+Laptops become optional, not required. Rule unchanged: quarterly restore drill
+(test a real Parquet read from R2 via DuckDB — one query proves the chain).
+
 ## To wire (planning mode — listed for P1/P5f execution)
 
 1. `scripts/backup_compact_critical.sh` — dumps + manifests + git bundles →
