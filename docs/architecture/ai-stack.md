@@ -54,6 +54,18 @@ than trusting model confidence blindly.
 - Privacy: TypeSafe policy = no training on prompts, retention exists; market
   data is public → fine. (Personal-document rule from KeyHub unchanged.)
 
+## Prior art (local, 2026-09-30 audit)
+
+`~/Desktop/Github Projects/gammasummit-gammabrain/` — "GammaSummit Brain"
+standalone HTML report system (37K build spec + v2 output + HANDOFF).
+Feeds our Analyst/Report module (E6): sigma as the universal yardstick
+(= our Tempest sigma), computed-never-authored explanations (= our
+outcome-verified claims), horizon-separated views, path check (gamma
+between here and level brakes or pushes), honesty layer (GEX = inferred
+positioning, stated), progressive disclosure. GitHub also holds older
+GEX prior art: `Gamma-Bot`, `gflows` (fork), `gex-tracker-*`, `GAVEX-Trader`.
+Owner study notes: `~/Desktop/skylit/skylit-learn/` (gamma basics/regimes).
+
 ## Use-case map: Jev + small models in the quant loop (2026-09-30)
 
 Guardrail (hard): backtest math = deterministic DuckDB code. Models wrap the
