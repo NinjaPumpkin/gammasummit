@@ -8,7 +8,7 @@ production changes.
 
 Options-flow intelligence platform: live gamma/flow dashboards + AI analysis,
 all Unusual Whales tickers, top-200 live. UI follows skylit.ai layout patterns
-(`docs/design-reference-skylit.md`). Product conventions owner-locked
+(`docs/architecture/design-reference-skylit.md`). Product conventions owner-locked
 (`frontend/README.md`).
 
 **v1:** ingest + tiering pipeline, API, dashboard (heatmap matrix, flow feed,
@@ -60,7 +60,7 @@ SpotGamma/FATTE), scanner/compass, saved shared layouts.
 
 ## 4. Data tiers + jobs
 
-Spec: `docs/data-tiering.md`. T0 raw 24–48h → T1 5-min buckets 30d → T2
+Spec: `docs/ops/data-tiering.md`. T0 raw 24–48h → T1 5-min buckets 30d → T2
 hourly+EOD rollups 90d–1yr → T3 Parquet indefinite.
 
 Jobs (all idempotent, retryable, export-first): `downsampler` (5-min cadence),
@@ -106,7 +106,7 @@ Types locked: `timestamptz`, `date`, `bigint`/`double precision`. Indexes:
 Edge (Cloudflare) → frontend (Vercel) → API (authn: passkeys primary + magic
 fallback; authz: per-resource; rate limits) → DB (service role only, deny-
 default grants, RLS + API double-check, pgaudit). Full spec:
-`docs/security.md` + `docs/security-future.md`. CI gates: grants regression
+`docs/ops/security.md` + `docs/ops/security-future.md`. CI gates: grants regression
 test, gitleaks, Semgrep, Trivy, supabase-security linter (⚠ Oct 30, 2026 Data
 API grants change), `get_advisors` = zero ERROR lints.
 
@@ -157,12 +157,12 @@ Each phase = ADR + tests + `get_advisors` clean. Slow, meticulous, no redo.
 | Doc | Room |
 |---|---|
 | `ARCHITECTURE.md` | runtime data path (short form) |
-| `docs/data-tiering.md` | tier + job rules |
-| `docs/migration-from-signalforge.md` | reuse map + cutover |
-| `docs/security.md` / `security-future.md` | security now / roadmap |
-| `docs/operations.md` | runbooks |
-| `docs/frontend-design.md` | UX rules (⚠ mock visuals rejected — rewrite from design-reference) |
-| `docs/design-reference-skylit.md` | layout patterns (UI source of truth) |
-| `docs/frontend-future.md` | UI roadmap |
-| `docs/risks-and-toolkit.md` | pitfalls + tool/extension audits |
+| `docs/ops/data-tiering.md` | tier + job rules |
+| `docs/ops/migration-from-signalforge.md` | reuse map + cutover |
+| `docs/ops/security.md` / `security-future.md` | security now / roadmap |
+| `docs/ops/operations.md` | runbooks |
+| `docs/architecture/frontend-design.md` | UX rules (⚠ mock visuals rejected — rewrite from design-reference) |
+| `docs/architecture/design-reference-skylit.md` | layout patterns (UI source of truth) |
+| `docs/build/frontend-future.md` | UI roadmap |
+| `docs/ops/risks-and-toolkit.md` | pitfalls + tool/extension audits |
 | `docs/decisions/NNNN_*` | ADRs (binding) |

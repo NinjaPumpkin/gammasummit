@@ -6,7 +6,7 @@ observed from the live product (account: owner's own subscription).
 
 **Deep RE + parity gate:** exact controls/palettes/node styles in
 `SignalForge/docs/SKYLIT_REVERSE_ENGINEERING.md`; element-by-element 1:1 status
-in `docs/parity-checklist-skylit.md`; working demo in
+in `docs/build/parity-checklist-skylit.md`; working demo in
 `frontend/mockups/dashboard-v3.html` (heatmap toolbar: movement filter
 All/↑/↓, velocity window All/1m/5m/15m/1h/4h/1d, velocity on/off, View
 Controls, Node % panel, pulses + velocity chips).

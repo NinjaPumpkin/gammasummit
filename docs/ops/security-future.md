@@ -1,6 +1,6 @@
 # Security — Look Ahead
 
-Beyond `docs/security.md` checklist. Grounded where freshness matters
+Beyond `docs/ops/security.md` checklist. Grounded where freshness matters
 (auth landscape verified 2026-09-30).
 
 ## Identity — the big move: passkeys
@@ -70,7 +70,7 @@ device list, remote revoke).
 
 - Quarterly **backup restore drills** (an untested backup is not a backup).
 - Incident runbook: severity matrix, comms template, log preservation —
-  fill `docs/operations.md` playbooks before go-live, not after first incident.
+  fill `docs/ops/operations.md` playbooks before go-live, not after first incident.
 - Email auth on sending domain: SPF + DKIM + DMARC (magic-link/recovery
   deliverability + anti-spoof).
 

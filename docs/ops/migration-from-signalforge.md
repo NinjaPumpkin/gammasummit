@@ -12,13 +12,13 @@ flag-day switch — dual-run, measure, then flip.
 | atomic publication RPCs | ✅ pattern | port SQL into `db/migrations/`, transaction boundaries preserved |
 | `v3/p2_gamma/gamma_ingest.py` writer flow | ✅ logic | re-derive in `backend/ingest/`; writer contract (what lands when) documented in `db/schema/` |
 | fetcher chunking / history budgets (leandata workers) | ✅ logic | resume-budget pattern into `backend/ingest/` |
-| `--phx-datasets` scoping | ✅ mechanism | becomes top-200 policy + lazy tail (`docs/data-tiering.md`) |
+| `--phx-datasets` scoping | ✅ mechanism | becomes top-200 policy + lazy tail (`docs/ops/data-tiering.md`) |
 | `deploy/gammasummit-ingest.service` | ✅ shape | redeployed units in `deploy/systemd/`, new env + paths |
 | parity spec `docs/TWEATERMINAL_PARITY_IMPLEMENTATION_GUIDE.md` | ✅ reference | frontend widget parity target |
 | per-ticker `gamma_data_<t>` tables (1,232) | ❌ never | single partitioned tables (`db/README.md` rule 5) |
 | `timestamp text` / `expiry_date text` columns | ❌ never | `timestamptz` / `date` |
 | anon-readable grants / 1,257 tables no RLS | ❌ never | deny-by-default, API-only read surface |
-| unthinned raw retention (3–6 GB/day) | ❌ never | T0 = 24–48h (`docs/data-tiering.md`) |
+| unthinned raw retention (3–6 GB/day) | ❌ never | T0 = 24–48h (`docs/ops/data-tiering.md`) |
 | 609-ticker always-live ingest | ❌ never | top-200 live + lazy tail |
 
 ## Measured facts carried over (verified 2026-09-30)

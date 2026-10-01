@@ -29,7 +29,7 @@ A and B run **in parallel** (no shared code). C bridges. E last.
 ### P0 — Parity freeze (WS A, ~1–2 sessions)
 **HARD GATE FIRST — owner condition (2026-09-30): calc parity.** Calculations
 derived fresh (no SignalForge code): `backend/core/exposure.py` from scratch +
-capture harness + acceptance metrics from `docs/skylit-value-model.md`
+capture harness + acceptance metrics from `docs/build/skylit-value-model.md`
 (king-strike ±10pt ≥ 85%, top6 ≥ 5/6 on ≥ 80% of ≥ 20 session-days, owner
 signs "nodes look the same"). Nothing else in the project starts until this
 passes. Closest known model: BSγ × call/put × ask/bid flip × (vol+0.5·OI) —
@@ -74,7 +74,7 @@ preview workflow (ADR 0002) from commit 1.
 Work: dual-write shadow from SignalForge ingest; 2-week reconciliation
 (daily diff reports via DuckDB federation `postgres` extension); endpoint
 flip; SignalForge → read-only → archive. Full checklist incl. VPS swap,
-file removal policy and dependency hardening: `docs/offboarding-signalforge.md`.
+file removal policy and dependency hardening: `docs/ops/offboarding-signalforge.md`.
 - **DoD:** 10 consecutive trading days of zero material diffs; rollback
   rehearsed; `gammasummit` = production.
 

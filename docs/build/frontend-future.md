@@ -7,7 +7,7 @@ Product goals honored throughout: one mobile UI, TWEATerminal parity, alerts.
 
 | Item | What it gives users | Notes |
 |---|---|---|
-| **Passkey login** | one-tap Face ID/Touch ID sign-in, zero email round-trips | pairs with `docs/security-future.md`; magic-link stays as fallback |
+| **Passkey login** | one-tap Face ID/Touch ID sign-in, zero email round-trips | pairs with `docs/ops/security-future.md`; magic-link stays as fallback |
 | Skeleton + streamed widget states | instant shell, data fills in | matches design-spec perf budget |
 | SSE delta updates | live numbers without refetch storms | ch.24: backpressure + reconnect w/ backoff |
 | ⌘K command palette (`cmdk`) | ticker/mode/nav in one keystroke | power-user core for a trading tool |
@@ -34,7 +34,7 @@ Product goals honored throughout: one mobile UI, TWEATerminal parity, alerts.
 
 - **DuckDB-WASM in browser**: on-demand history queries over Parquet on R2 with
   zero backend compute. Requires COOP/COEP headers (cross-origin isolation) +
-  signed URLs — coordinate with CSP work (`docs/security-future.md`).
+  signed URLs — coordinate with CSP work (`docs/ops/security-future.md`).
 - **WebGL chart path** (uPlot or regl) if real data exceeds ~100k visible
   points; stay on lightweight-charts until measured need (ADR 0003).
 - **AI Analyst streaming**: SSE token stream + reasoning panel + source

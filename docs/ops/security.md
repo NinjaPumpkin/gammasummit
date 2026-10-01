@@ -29,7 +29,7 @@ frontend ──(HTTPS)──► API (authn + authz + rate limit) ──(service 
 
 - Env files outside the repo on servers (`/etc/gammasummit/env`, mode 600).
 - `.env*` gitignored; `.env.example` holds names only, never values.
-- Rotation runbook in `docs/operations.md`.
+- Rotation runbook in `docs/ops/operations.md`.
 - Log scrubbing: never log tokens, full request bodies, or connection strings.
 
 ## Data protection

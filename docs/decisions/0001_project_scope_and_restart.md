@@ -14,7 +14,7 @@ rather than repeated retrofitting.
 
 1. **New project** `~/Desktop/Github Projects/gammasummit` is the canonical
    build going forward. Code developed from scratch; SignalForge logic re-derived
-   deliberately via `docs/migration-from-signalforge.md`. SignalForge stays
+   deliberately via `docs/ops/migration-from-signalforge.md`. SignalForge stays
    production until measured cutover.
 2. **Data tiers:** T0 raw 24–48h → T1 5-min buckets 30d → T2 rollups 90d–1yr →
    T3 Parquet cold (external disk + B2/R2). Owner tightened raw to 24–48h for

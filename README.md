@@ -5,12 +5,22 @@ flow analytics, OI movers, multi-ticker live data from Unusual Whales / PHX / IB
 
 **Status: foundation scaffold — folders + docs only, no code yet.**
 
+## Docs map
+
+| Folder | Contents |
+|---|---|
+| `docs/build/README.md` | **Builder guide — START HERE** (workstreams, gates, hard rules) |
+| `docs/architecture/` | floor plan, design reference, AI stack, topology, product inventory |
+| `docs/build/` | ultraplan, parity checklist, RE campaign, value-model verdicts |
+| `docs/ops/` | tiering, security, operations, backup, offboarding, migration |
+| `docs/decisions/` | ADRs (architectural law) |
+
 ## Relationship to SignalForge
 
 `~/Desktop/Github Projects/SignalForge` is the **reference implementation and
 current production system**. It keeps running until this project is proven and
 cut over. Logic gets re-derived and re-written here lean; nothing is copied
-blind. See `docs/migration-from-signalforge.md` for the reuse map and the
+blind. See `docs/ops/migration-from-signalforge.md` for the reuse map and the
 anti-patterns that must NOT be carried over.
 
 ## Core principles
@@ -27,7 +37,7 @@ anti-patterns that must NOT be carried over.
 6. **Observability is a feature.** Data freshness ("last updated") is both a
    product feature and an alert.
 
-## Data tiers (summary — full spec: `docs/data-tiering.md`)
+## Data tiers (summary — full spec: `docs/ops/data-tiering.md`)
 
 | Tier | Content | Retention | Store |
 |------|---------|-----------|-------|
@@ -55,11 +65,11 @@ anti-patterns that must NOT be carried over.
 | `data/` | local dev data (gitignored) |
 | `docs/` | architecture, tiering, security, operations, ADRs |
 
-**Start here: [`docs/master-architecture.md`](docs/master-architecture.md)** —
-the floor plan — and [`docs/ultraplan.md`](docs/ultraplan.md) — the execution
+**Start here: [`docs/architecture/master-architecture.md`](docs/architecture/master-architecture.md)** —
+the floor plan — and [`docs/build/ultraplan.md`](docs/build/ultraplan.md) — the execution
 plan. UI follows skylit.ai layout patterns
-(`docs/design-reference-skylit.md`, parity gate:
-`docs/parity-checklist-skylit.md`).
+(`docs/architecture/design-reference-skylit.md`, parity gate:
+`docs/build/parity-checklist-skylit.md`).
 
 ## Naming conventions
 

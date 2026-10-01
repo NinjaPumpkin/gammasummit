@@ -65,7 +65,7 @@ Movers, mode toggles): review widgets in isolation without any deploy.
 - Production changes only via merge to `main` + production auth flow.
 - Two data modes to maintain (mock + live) — small cost, big review speedup.
 - Supabase Auth config gets one wildcard entry per environment; documented in
-  `docs/security.md` (auth redirect allow-list is security-sensitive).
+  `docs/ops/security.md` (auth redirect allow-list is security-sensitive).
 
 ## Rejected alternatives
 

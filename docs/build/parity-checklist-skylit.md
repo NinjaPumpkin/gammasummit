@@ -74,11 +74,11 @@ Legend: ✅ in demo v3 · 📝 spec'd, builds in phase 4 · 🔍 needs deeper se
 
 - Deep RE (palettes, node styles, API, normalization ground truth):
   `SignalForge/docs/SKYLIT_REVERSE_ENGINEERING.md`
-- Layout patterns + product map: `docs/design-reference-skylit.md`
+- Layout patterns + product map: `docs/architecture/design-reference-skylit.md`
 - Working demo: `frontend/mockups/dashboard-v3.html`
 
 ## Gate
 
 Heatmap rows 1–28 ✅/📝 resolved + one full intraday session comparing
 live-vs-demo side by side → parity accepted → THEN architecture freeze +
-SignalForge port begins (`docs/migration-from-signalforge.md`).
+SignalForge port begins (`docs/ops/migration-from-signalforge.md`).

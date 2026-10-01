@@ -49,7 +49,7 @@ lazy path: user opens long-tail ticker
   recompute only from T3 (rare, expensive, deliberate).
 - No view or query in the request path may scan raw T0 tables for >1 ticker.
 
-## Security model (summary — full spec: `docs/security.md`)
+## Security model (summary — full spec: `docs/ops/security.md`)
 
 - Frontend → API → database. The database has no public read surface.
 - Deny-by-default grants; service credentials live only in server env.

@@ -42,4 +42,4 @@ session. Everything else is answerable from buckets and rollups.
   third source of truth.
 - No dashboard/API query may scan raw T0 across more than one ticker.
 - Retention never deletes un-exported data. Verified export manifest before
-  delete (per `docs/operations.md`).
+  delete (per `docs/ops/operations.md`).

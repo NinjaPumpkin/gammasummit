@@ -181,7 +181,7 @@ our own).
 
 ## Security hardening (ch.17 + 04)
 
-- Everything in `docs/security.md` checklist, plus:
+- Everything in `docs/ops/security.md` checklist, plus:
 - CSP + strict CORS; rate limiting at edge; CSRF strategy chosen with auth mode
 - **gitleaks** pre-commit + CI (the `.env` incident class: never again)
 - **Semgrep** CI rules; **Trivy** container scan; Dependabot/Renovate updates

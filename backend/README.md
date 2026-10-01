@@ -27,7 +27,7 @@ backend/
 ## Reuse policy from SignalForge
 
 Logic is re-derived from the reference implementation, not copied. Known-good
-patterns to port deliberately (see `../docs/migration-from-signalforge.md`):
+patterns to port deliberately (see `../docs/ops/migration-from-signalforge.md`):
 batch upsert + retry + stats (supabase_writer), atomic publication RPCs,
 fetcher chunking/resume budgets. Anti-patterns that must NOT come along:
 per-ticker tables, text timestamps, anon-readable grants, unthinned raw

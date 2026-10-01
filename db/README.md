@@ -24,7 +24,7 @@ db/
 6. Indexes: `(ticker, timestamp DESC)` composite on time-series tables;
    justify every additional index (write cost is real).
 7. Grants deny-by-default. No anon access to data tables. App access via
-   service role held only by the API/backend (see `../docs/security.md`).
+   service role held only by the API/backend (see `../docs/ops/security.md`).
 8. Rollup tables are append-only and recomputable from a lower tier.
 
 ## Tier ownership
@@ -36,4 +36,4 @@ db/
 | T2 | hourly + EOD rollups | rollup jobs | history views, on-demand |
 | T3 | Parquet files | retention/export | DuckDB |
 
-Full spec: `../docs/data-tiering.md`.
+Full spec: `../docs/ops/data-tiering.md`.
