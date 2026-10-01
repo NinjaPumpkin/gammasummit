@@ -1,0 +1,133 @@
+# ci.yml — CI pipeline (card E1.2).
+#
+# Five required checks (branch protection targets these job names, E1.3):
+#   lint           ruff over product surfaces (scope pinned in pyproject.toml)
+#   tests          pytest (backend) + frontend build (tsc --noEmit + vite build)
+#   migration-lint forward-only SQL migration gate (scripts/migration_lint.py)
+#   contract-sync  Zod<->pydantic single contract (ADR 0003) drift gate
+#   gitleaks       secrets never in git — full-history scan (fetch-depth: 0)
+#
+# Rules encoded here (docs/build/README.md "Hard rules"):
+#   - secrets never in git/chat: gitleaks is a required job, no credentials in
+#     this workflow beyond the ephemeral GITHUB_TOKEN checkout needs (read-only)
+#   - done = verified: every job runs the real script/test suite, no stubs
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# Deny-default: nothing beyond reading the repo.
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install backend (dev)
+        run: pip install -e '.[dev]'
+
+      - name: ruff check
+        run: ruff check .
+
+  tests:
+    name: tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install backend (dev)
+        run: pip install -e '.[dev]'
+
+      - name: pytest
+        run: pytest
+
+      - name: npm ci
+        run: npm ci
+
+      # frontend build = tsc --noEmit && vite build (frontend/package.json),
+      # so typecheck rides along with the build.
+      - name: frontend build
+        run: npm run build
+
+  migration-lint:
+    name: migration-lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: migration lint (db/migrations)
+        run: python3 scripts/migration_lint.py
+
+  contract-sync:
+    name: contract-sync
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install backend
+        run: pip install -e .
+
+      - name: contract drift check (pydantic -> zod mirror)
+        run: python3 scripts/contract_sync.py --check
+
+  gitleaks:
+    name: gitleaks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Full history: secrets never in git means never in ANY commit.
+          fetch-depth: 0
+
+      - name: Install gitleaks
+        env:
+          GITLEAKS_VERSION: 8.30.1
+        run: |
+          curl -sSfL -o /tmp/gitleaks.tar.gz \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          tar -xzf /tmp/gitleaks.tar.gz -C /tmp gitleaks
+          sudo install -m 0755 /tmp/gitleaks /usr/local/bin/gitleaks
+          gitleaks version
+
+      - name: gitleaks detect (full history + tree)
+        run: gitleaks detect --source . --redact --no-banner -v
