@@ -17,6 +17,7 @@ data/**
 # Python
 __pycache__/
 *.py[cod]
+*.egg-info/
 .venv/
 venv/
 .pytest_cache/
@@ -35,6 +36,10 @@ dist/
 .idea/
 .vscode/
 *.swp
+*.bak
+
+# Agent tooling caches
+.serena/
 
 # Backups & exports
 .backups/

@@ -1,0 +1,19 @@
+{
+  "name": "gammasummit",
+  "private": true,
+  "version": "0.0.0",
+  "description": "GammaSummit workspace root — frontend lives in frontend/ (npm workspace)",
+  "workspaces": [
+    "frontend"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace frontend",
+    "build": "npm run build --workspace frontend",
+    "typecheck": "npm run typecheck --workspace frontend",
+    "contract:check": "python3 scripts/contract_sync.py --check",
+    "migration:lint": "python3 scripts/migration_lint.py"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

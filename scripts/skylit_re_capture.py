@@ -11,7 +11,8 @@ Usage:
       --date 2026-09-30 --step 60 --metrics gamma,vanna
   python3 scripts/skylit_re_capture.py range --symbols SPX,SPY,QQQ,IWM \
       --date 2026-09-30
-Env: SKYLIT_API_KEY (see gammasummit/.env). Output:
+Env: GAMMASUMMIT_SKYLIT_API_KEY (legacy SKYLIT_API_KEY still accepted; see
+gammasummit/.env). Output:
   <out>/<metric>/<date>/<HHMMSS>.json.gz  + <out>/capture_manifest.jsonl
 """
 import argparse, gzip, json, os, random, sys, time, urllib.request, urllib.parse, urllib.error
@@ -33,15 +34,17 @@ def out_root():
 
 
 def get_key():
-    k = os.environ.get("SKYLIT_API_KEY", "")
+    k = (os.environ.get("GAMMASUMMIT_SKYLIT_API_KEY", "")
+         or os.environ.get("SKYLIT_API_KEY", ""))
     if not k:
         for p in ("/Users/admin/Desktop/Github-Projects/gammasummit/.env", os.path.expanduser("~/.hermes/.env")):
             try:
                 for line in open(p):
-                    if line.startswith("SKYLIT_API_KEY="):
+                    if (line.startswith("SKYLIT_API_KEY=")
+                            or line.startswith("GAMMASUMMIT_SKYLIT_API_KEY=")):
                         k = line.split("=", 1)[1].strip()
                         if k:
-                            os.environ["SKYLIT_API_KEY"] = k
+                            os.environ["GAMMASUMMIT_SKYLIT_API_KEY"] = k
                             return k
             except OSError:
                 pass

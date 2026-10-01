@@ -3,7 +3,19 @@
 Options-flow intelligence platform (TWEATerminal-style): gamma/GEX dashboards,
 flow analytics, OI movers, multi-ticker live data from Unusual Whales / PHX / IBKR.
 
-**Status: foundation scaffold — folders + docs only, no code yet.**
+**Status: build scaffold in place (E1.1) — manifests, API skeleton, contract
+sync, migration lint, frontend placeholder. P0 calc-parity gate still open.**
+
+## Quickstart (fresh clone)
+
+```bash
+python3 -m venv .venv && .venv/bin/pip install -e '.[dev]'   # backend + tooling
+.venv/bin/python -m pytest backend/tests                      # tests
+.venv/bin/ruff check .                                        # lint
+python3 scripts/migration_lint.py                             # migration gate
+python3 scripts/contract_sync.py --check                      # zod<->pydantic sync
+npm install && npm run build                                  # frontend (workspace)
+```
 
 ## Docs map
 

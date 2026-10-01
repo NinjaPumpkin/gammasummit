@@ -1,0 +1,21 @@
+# gammasummit-jobs.service — scheduled jobs runtime (placeholder, card E1.1).
+# Single-scheduler rule: these backend timers XOR pg_cron — never both.
+# Rollups/retention/export jobs land with workstream B; the runner entrypoint
+# `backend.jobs.runner` is created by that card.
+[Unit]
+Description=GammaSummit jobs (rollups, retention, export, outcomes)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=gammasummit
+Group=gammasummit
+WorkingDirectory=/opt/gammasummit/current
+EnvironmentFile=/etc/gammasummit/gammasummit.env
+ExecStart=/opt/gammasummit/current/.venv/bin/python -m backend.jobs.runner
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

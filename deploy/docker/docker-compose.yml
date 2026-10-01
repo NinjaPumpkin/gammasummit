@@ -1,0 +1,51 @@
+# Local dev parity stack (placeholder, card E1.1 scaffold) —
+# docs/build/code-structure-and-release.md §1: api + postgres + jobs.
+# Real images/builds land with the deploy workstream; this compose file
+# pins the topology so local dev matches the VPS shape early.
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: gammasummit
+      POSTGRES_USER: gammasummit
+      # Dev-only credential. Real secrets never enter git — prod uses
+      # /etc/gammasummit/gammasummit.env (GAMMASUMMIT_* keys).
+      POSTGRES_PASSWORD: gammasummit-dev-only
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  api:
+    image: python:3.10-slim
+    working_dir: /app
+    command: >
+      sh -c "pip install --no-cache-dir -e '.[dev]' &&
+             uvicorn backend.api.main:app --host 0.0.0.0 --port 8100"
+    volumes:
+      - ../..:/app
+    environment:
+      GAMMASUMMIT_ENV: dev
+      GAMMASUMMIT_DATABASE_URL: postgresql://gammasummit:gammasummit-dev-only@postgres:5432/gammasummit
+    ports:
+      - "8100:8100"
+    depends_on:
+      - postgres
+
+  jobs:
+    image: python:3.10-slim
+    working_dir: /app
+    # Placeholder command — runner lands with workstream B (see systemd unit).
+    command: >
+      sh -c "pip install --no-cache-dir -e '.[dev]' &&
+             python -c 'print(\"jobs placeholder — backend.jobs.runner lands with workstream B\")'"
+    volumes:
+      - ../..:/app
+    environment:
+      GAMMASUMMIT_ENV: dev
+      GAMMASUMMIT_DATABASE_URL: postgresql://gammasummit:gammasummit-dev-only@postgres:5432/gammasummit
+    depends_on:
+      - postgres
+
+volumes:
+  pgdata:

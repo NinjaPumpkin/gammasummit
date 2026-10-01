@@ -1,0 +1,23 @@
+# gammasummit-api.service — API runtime (placeholder, card E1.1 scaffold).
+# Naming law: gammasummit-<role>.service (docs/build/README.md hard rules).
+# Full release flow (releases/<sha> + atomic 'current' symlink flip):
+# docs/build/code-structure-and-release.md §5.
+[Unit]
+Description=GammaSummit API (FastAPI + uvicorn)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=gammasummit
+Group=gammasummit
+WorkingDirectory=/opt/gammasummit/current
+# GAMMASUMMIT_* keys only — never inline secrets in this unit.
+EnvironmentFile=/etc/gammasummit/gammasummit.env
+ExecStart=/opt/gammasummit/current/.venv/bin/uvicorn backend.api.main:app --host 127.0.0.1 --port 8100
+Restart=on-failure
+RestartSec=5
+# Structured JSON logs to journald (request-id per docs/build/code-structure-and-release.md §3).
+
+[Install]
+WantedBy=multi-user.target

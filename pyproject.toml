@@ -1,0 +1,55 @@
+# GammaSummit — Python manifest (card E1.1 scaffold).
+# Stack per docs/decisions/0003_build_stack.md: FastAPI + asyncpg + pydantic.
+# Code must stay Python 3.10-compatible (VPS constraint); floor is 3.9 so the
+# scaffold installs on stock macOS python as well.
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gammasummit"
+version = "0.0.0"
+description = "Options-flow intelligence platform — clean-room build (never copies SignalForge code)"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "fastapi>=0.110",
+    "uvicorn>=0.27",
+    "asyncpg>=0.29",
+    "pydantic>=2.6",
+    "pydantic-settings>=2.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "httpx>=0.27",
+    "ruff>=0.4",
+    "mypy>=1.9",
+]
+
+[tool.setuptools.packages.find]
+include = ["backend*"]
+
+[tool.pytest.ini_options]
+testpaths = ["backend/tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+# Product surfaces only: backend/ plus the CI harness scripts. The one-off RE
+# research probes under scripts/ (e0*/e05*/p0*/skylit capture) predate the
+# scaffold and are not product code — they join the gate when promoted.
+include = ["backend/**/*.py", "scripts/migration_lint.py", "scripts/contract_sync.py"]
+
+[tool.ruff.lint]
+# Deliberately small set: correctness basics only. Style churn on research
+# scripts is noise; widen per-area later.
+select = ["E", "F", "W"]
+
+[tool.mypy]
+python_version = "3.10"
+ignore_missing_imports = true
+warn_unused_configs = true
+files = ["backend"]

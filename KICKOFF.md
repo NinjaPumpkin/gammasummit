@@ -10,8 +10,14 @@ with `/botmode` + `/kanban` + subagents + bot profiles, and where the specs are.
 - Repo: `~/Desktop/Github-Projects/gammasummit` (git, planning complete).
 - Read first: `docs/build/README.md` (builder guide) → `docs/build/code-structure-and-release.md`
   → `docs/build/ultraplan.md` (phases P0–P5, workstreams A–F).
-- Status: architecture done. Nothing built. **First gate = P0 calc parity**
-  (clean-room `backend/core/exposure.py`, king exact ≥90% over ≥20 session-days).
+- Status (2026-10-01 owner ruling): **build proceeds in parallel with P0
+  calc-parity work.** P0 gate (`docs/build/p0-acceptance-report.md`) is NOT
+  signed (oracle bound: weight-model class tops at 68.6% king exact — see
+  `docs/build/e05b-king-parity.md` §5) and remains the cutover milestone with
+  bars honest (king exact ≥90% over ≥20 session-days, node error ≤10%).
+  Owner priorities: (1) keep collecting Skylit + UW + leandata data,
+  (2) RE Skylit per-cell gamma-heatmap calcs from UW extraction until very
+  close (goal card E0.6), (3) build out the project meanwhile (E1+ unblocked).
 - Hard rules (violating = wrong): clean-room calcs (no SignalForge code copies);
   `--dry-run` default for destructive ops; frontend → API only (no DB keys in
   browser); secrets never in git/chat; never write to SignalForge prod;
