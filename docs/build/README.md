@@ -45,7 +45,8 @@ copied).
 Cross-cutting: AI stack `../architecture/ai-stack.md` +
 `../architecture/talon-ai-framework.md`; linkage/DNS/GitHub/R2
 `../architecture/topology-linkage.md`; RE knowledge `skylit-value-model.md`
-+ `../ops/signalforge-knowledge-transfer.md`.
++ `../ops/signalforge-knowledge-transfer.md`. **Code tree, module duties,
+versioning & rollback: `code-structure-and-release.md` (this folder).**
 
 ## P0 gate (before any product build)
 
