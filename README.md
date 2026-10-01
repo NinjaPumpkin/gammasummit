@@ -1,5 +1,7 @@
 # GammaSummit
 
+[![CI](https://github.com/NinjaPumpkin/gammasummit/actions/workflows/ci.yml/badge.svg)](https://github.com/NinjaPumpkin/gammasummit/actions/workflows/ci.yml)
+
 Options-flow intelligence platform (TWEATerminal-style): gamma/GEX dashboards,
 flow analytics, OI movers, multi-ticker live data from Unusual Whales / PHX / IBKR.
 
