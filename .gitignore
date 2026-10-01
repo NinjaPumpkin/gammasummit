@@ -45,3 +45,5 @@ dist/
 .backups/
 *.dump
 *.tar.gz
+.vercel
+.env*
