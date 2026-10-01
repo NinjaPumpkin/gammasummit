@@ -7,7 +7,7 @@ with `/botmode` + `/kanban` + subagents + bot profiles, and where the specs are.
 
 ## 0. Orient (5 minutes)
 
-- Repo: `~/Desktop/Github Projects/gammasummit` (git, planning complete).
+- Repo: `~/Desktop/Github-Projects/gammasummit` (git, planning complete).
 - Read first: `docs/build/README.md` (builder guide) → `docs/build/code-structure-and-release.md`
   → `docs/build/ultraplan.md` (phases P0–P5, workstreams A–F).
 - Status: architecture done. Nothing built. **First gate = P0 calc parity**
@@ -121,7 +121,7 @@ number must come from a real script run on real data. Report blockers honestly.
 
 ## 7. First 5 moves for the new session
 
-1. `cd ~/Desktop/Github\ Projects/gammasummit && cat docs/build/README.md`
+1. `cd ~/Desktop/Github-Projects/gammasummit && cat docs/build/README.md`
 2. `hermes profile list` (verify/create team + copy auth.json/.env)
 3. `hermes kanban init && hermes kanban list`
 4. Open `hermes -p gammasummit-pm chat -c "Bot Chat"` → decompose E0/E1 into cards

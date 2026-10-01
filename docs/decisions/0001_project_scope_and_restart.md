@@ -12,7 +12,7 @@ rather than repeated retrofitting.
 
 ## Decisions
 
-1. **New project** `~/Desktop/Github Projects/gammasummit` is the canonical
+1. **New project** `~/Desktop/Github-Projects/gammasummit` is the canonical
    build going forward. Code developed from scratch; SignalForge logic re-derived
    deliberately via `docs/ops/migration-from-signalforge.md`. SignalForge stays
    production until measured cutover.

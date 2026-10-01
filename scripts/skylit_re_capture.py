@@ -19,7 +19,7 @@ from datetime import datetime, timedelta, timezone
 
 API = "https://api.skylit.ai"
 X10_ROOT = "/Volumes/X10 Pro/gammasummit/t3/re/raw"
-LOCAL_STAGING = "/Users/admin/Desktop/Github Projects/gammasummit/data/re-staging"
+LOCAL_STAGING = "/Users/admin/Desktop/Github-Projects/gammasummit/data/re-staging"
 RTH_START = (13, 30)   # 9:30 ET
 RTH_END = (20, 0)      # 16:00 ET
 
@@ -35,7 +35,7 @@ def out_root():
 def get_key():
     k = os.environ.get("SKYLIT_API_KEY", "")
     if not k:
-        for p in ("/Users/admin/Desktop/Github Projects/gammasummit/.env", os.path.expanduser("~/.hermes/.env")):
+        for p in ("/Users/admin/Desktop/Github-Projects/gammasummit/.env", os.path.expanduser("~/.hermes/.env")):
             try:
                 for line in open(p):
                     if line.startswith("SKYLIT_API_KEY="):
