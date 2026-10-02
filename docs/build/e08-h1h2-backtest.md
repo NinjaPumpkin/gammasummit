@@ -124,9 +124,20 @@ P≈0.005, R≈0.02–0.055.
   DB password exists in any env): paste `0002_contract_daily_stats.sql` into the Supabase
   SQL editor (or `supabase db query` after `supabase link`), then the scheduled run's
   `--execute` activates. Until then the parquet plane carries the history.
-- **Schedule**: daily cron (Mon–Fri, after close) runs the collector for the settled
-  session — history accumulates going forward, which is exactly what H1 needs (RVOL
-  baselines + real per-day OI).
+- **Schedule**: daily cron `e08-contract-daily-persist` (job `3e3057b08b4c`, Mon–Fri
+  23:35 local, `no_agent` script `e08_persist_tick.py`) runs the collector with
+  `--execute` for the latest completed session — history accumulates going forward,
+  which is exactly what H1 needs (RVOL baselines + real per-day OI).
+- **First full run (verified, 2026-10-02):** 610 tickers (exactly the UW captured
+  universe), **719,573 per-contract rows + 610 underlying rows**, 8,654 PHX calls
+  @~2.2 rps effective, 0 auth fallbacks, 0 errors, 64 min.
+  `data/e08/contract_daily/dt=2026-09-30/` — session label derived from data, not
+  calendar: the run's max `last_tape_time` = `2026-09-30T21:36:18Z` proves the served
+  snapshot is the 09-30 session (PHX chains is one session stale as of this capture),
+  so rows were relabeled `2026-10-01` → `2026-09-30` (dte recomputed; the original
+  `dt=2026-10-01/` output is preserved verbatim as the run record). The collector now
+  self-corrects labels to tape ground truth on every run (`label_source` in
+  `run_report.json`), so a lagging endpoint can never poison the history.
 
 ## 5. Deliverable 3 — `e07_validate.py` re-run with richer features
 
@@ -159,5 +170,5 @@ premium ceiling on truth A, consistent with E0.7's "never blend the premium rank
   modified.
 - Artifacts: `data/e08/leandata_contract_daily.parquet` (191,931 rows),
   `data/e08/h1h2_backtest_report.{json,md}`, `data/e08/uw_features_rich_*.json`,
-  `data/e08/validation_report_rich_*.{json,md}`, `data/e08/contract_daily/dt=2026-10-01/`,
-  `data/e08/topchains_*.json` (42-day UW cache).
+  `data/e08/validation_report_rich_*.{json,md}`, `data/e08/contract_daily/dt=2026-09-30/`
+  (719,573 contract rows, first full capture), `data/e08/topchains_*.json` (42-day UW cache).

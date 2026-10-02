@@ -314,8 +314,30 @@ def main() -> None:
                   f"{phx.calls} calls, {time.time() - t0:.0f}s", file=sys.stderr)
 
     out_dt = os.path.join(args.out_dir, f"dt={session_date}")
+    # Session-label ground truth: the endpoint serves one settled snapshot and its
+    # `date` param is a no-op, so the max last_tape_time seen is the TRUE session.
+    # If it disagrees with the requested label, relabel rows to the tape date
+    # (requested label is preserved in the report).
+    applied_label = session_date
+    if max_tape_seen and max_tape_seen[:10] != session_date:
+        applied_label = max_tape_seen[:10]
+        for r in contracts:
+            r["date"] = applied_label
+            if r.get("expiration"):
+                try:
+                    r["dte"] = (datetime.date.fromisoformat(r["expiration"])
+                                - datetime.date.fromisoformat(applied_label)).days
+                except ValueError:
+                    pass
+        for u in underlyings:
+            u["date"] = applied_label
+        out_dt = os.path.join(args.out_dir, f"dt={applied_label}")
+        os.makedirs(out_dt, exist_ok=True)
+        session_date = applied_label
     rep = {
         "session_date": session_date,
+        "requested_label": args.date,
+        "label_source": "max_last_tape_time" if applied_label != (args.date or "") else "arg_or_today",
         "generated_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "max_last_tape_time_seen": max_tape_seen,
         "date_label_note": "PHX chains_expiry serves the latest settled snapshot (date param "
