@@ -41,7 +41,7 @@ target-version = "py39"
 # Product surfaces only: backend/ plus the CI harness scripts. The one-off RE
 # research probes under scripts/ (e0*/e05*/p0*/skylit capture) predate the
 # scaffold and are not product code — they join the gate when promoted.
-include = ["backend/**/*.py", "scripts/migration_lint.py", "scripts/contract_sync.py"]
+include = ["backend/**/*.py", "scripts/migration_lint.py", "scripts/contract_sync.py", "scripts/db_tests.py", "scripts/security_advisors_check.py"]
 
 [tool.ruff.lint]
 # Deliberately small set: correctness basics only. Style churn on research

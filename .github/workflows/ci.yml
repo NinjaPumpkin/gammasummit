@@ -1,11 +1,14 @@
-# ci.yml — CI pipeline (card E1.2).
+# ci.yml — CI pipeline (card E1.2; extended E2.1).
 #
-# Five required checks (branch protection targets these job names, E1.3):
-#   lint           ruff over product surfaces (scope pinned in pyproject.toml)
-#   tests          pytest (backend) + frontend build (tsc --noEmit + vite build)
-#   migration-lint forward-only SQL migration gate (scripts/migration_lint.py)
-#   contract-sync  Zod<->pydantic single contract (ADR 0003) drift gate
-#   gitleaks       secrets never in git — full-history scan (fetch-depth: 0)
+# Required checks (branch protection targets these job names, E1.3):
+#   lint              ruff over product surfaces (scope pinned in pyproject.toml)
+#   tests             pytest (backend) + frontend build (tsc --noEmit + vite build)
+#   migration-lint    forward-only SQL migration gate (scripts/migration_lint.py)
+#   contract-sync     Zod<->pydantic single contract (ADR 0003) drift gate
+#   gitleaks          secrets never in git — full-history scan (fetch-depth: 0)
+#   db-tests          migrations apply clean on empty DB + pgtap invariants +
+#                     grants regression (scripts/db_tests.py, E2.1)
+#   supabase-security supabase db lint zero-ERROR + get_advisors gate (E2.1)
 #
 # Rules encoded here (docs/build/README.md "Hard rules"):
 #   - secrets never in git/chat: gitleaks is a required job, no credentials in
@@ -131,3 +134,80 @@ jobs:
 
       - name: gitleaks detect (full history + tree)
         run: gitleaks detect --source . --redact --no-banner -v
+
+  # E2.1: migrations apply clean on an empty Supabase Postgres (the real target
+  # image), then pgtap schema invariants + deny-default grants regression.
+  db-tests:
+    name: db-tests
+    runs-on: ubuntu-latest
+    services:
+      db:
+        # Pinned Supabase Postgres — same extension set as the managed target
+        # (pg_partman, pgaudit, pgtap available).
+        image: public.ecr.aws/supabase/postgres:17.6.1.063
+        env:
+          POSTGRES_PASSWORD: ci-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install postgresql-client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: apply migrations + pgtap suites (invariants, grants regression)
+        run: >-
+          python3 scripts/db_tests.py
+          --db-url "postgresql://postgres:ci-only@localhost:5432/postgres?sslmode=disable"
+
+  # E2.1: supabase linter zero-ERROR on our schema + the get_advisors gate
+  # (runs for real the moment the hosted app Postgres is provisioned and
+  # SUPABASE_ACCESS_TOKEN / GAMMASUMMIT_SUPABASE_PROJECT_REF secrets exist).
+  supabase-security:
+    name: supabase-security
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: public.ecr.aws/supabase/postgres:17.6.1.063
+        env:
+          POSTGRES_PASSWORD: ci-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.95.4
+
+      - name: Install postgresql-client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: apply migrations (empty DB)
+        run: >-
+          python3 scripts/db_tests.py --apply-only
+          --db-url "postgresql://postgres:ci-only@localhost:5432/postgres?sslmode=disable"
+
+      - name: supabase db lint (zero ERROR, our schema)
+        env:
+          PGSSLMODE: disable
+        run: >-
+          supabase db lint
+          --db-url "postgresql://postgres:ci-only@localhost:5432/postgres"
+          -s public --level error --fail-on error
+
+      - name: get_advisors gate (no-op until hosted project provisioned)
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          GAMMASUMMIT_SUPABASE_PROJECT_REF: ${{ secrets.GAMMASUMMIT_SUPABASE_PROJECT_REF }}
+        run: python3 scripts/security_advisors_check.py

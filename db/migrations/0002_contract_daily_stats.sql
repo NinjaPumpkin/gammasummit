@@ -20,7 +20,10 @@ CREATE TABLE contract_daily_stats (
     ticker            TEXT        NOT NULL,
     expiration        DATE        NOT NULL,
     strike            NUMERIC     NOT NULL,
-    right             CHAR(1)     NOT NULL,   -- C/P
+    "right"           CHAR(1)     NOT NULL,   -- C/P — `right` is a reserved
+                                              -- word; must stay quoted (E2.1:
+                                              -- 0002 predated that check and
+                                              -- never applied cleanly anywhere)
     dte               INTEGER,
     total_premium     DOUBLE PRECISION,
     total_volume      BIGINT,
