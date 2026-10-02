@@ -81,25 +81,34 @@ def pr_at_k(pred: list[str], truth: set[str], k: int) -> dict:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dates", nargs="+", required=True)
+    ap.add_argument("--features-dir", default=E07,
+                    help="dir holding <features-prefix><date>.json (default data/e07)")
+    ap.add_argument("--features-prefix", default="uw_features_")
+    ap.add_argument("--out-stem", default="validation_report",
+                    help="output file stem written into --features-dir")
+    ap.add_argument("--rank-field", default="score_v0",
+                    help="ranked-row field to rank by (default score_v0)")
     args = ap.parse_args()
 
     report = {
         "generated_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-        "uw_source": "data/e07/uw_features_<date>.json (UW PHX only; score_v0 = unfitted "
-                     "equal-weight percentile mean, top_chains-truncated premium proxy)",
+        "uw_source": f"{args.features_dir}/{args.features_prefix}<date>.json (UW PHX only; "
+                     f"rank field = {args.rank_field})",
         "skylit_source": "data/e07/skylit_api/<date>_*.json (Flowseeker API daily rollups, "
                          "captured 2026-10-02)",
+        "rank_field": args.rank_field,
         "dates": {},
     }
 
     for D in args.dates:
-        uf = load(os.path.join(E07, f"uw_features_{D}.json"))
+        uf = load(os.path.join(args.features_dir, f"{args.features_prefix}{D}.json"))
         sk_prem = load(os.path.join(SK, f"{D}_top_tickers_premium.json"))["data"]
         uv = load(os.path.join(SK, f"{D}_unusual_volume.json"))["data"]
         uo = load(os.path.join(SK, f"{D}_unusual_oi.json"))["data"]
 
-        uw_rank = [r["ticker"] for r in uf["ranked"] if r.get("score_v0") is not None]
-        uw_score = {r["ticker"]: r["score_v0"] for r in uf["ranked"] if r.get("score_v0") is not None}
+        rows_valid = [r for r in uf["ranked"] if r.get(args.rank_field) is not None]
+        uw_rank = [r["ticker"] for r in sorted(rows_valid, key=lambda r: -r[args.rank_field])]
+        uw_score = {r["ticker"]: r[args.rank_field] for r in rows_valid}
         uw_prem = {r["ticker"]: r["premium"] for r in uf["ranked"]}
 
         sk_rank = [r["ticker"] for r in sk_prem]
@@ -131,36 +140,38 @@ def main() -> None:
         }
         report["dates"][D] = day
 
-    fn = os.path.join(E07, "validation_report.json")
+    fn = os.path.join(args.features_dir, args.out_stem + ".json")
     with open(fn, "w") as f:
         json.dump(report, f, indent=1)
 
     # markdown render
+    rank_label = args.rank_field
     md = ["# E0.7 validation report — UW score vs Skylit observed picks", "",
           f"Generated: {report['generated_utc']}",
           f"UW source: {report['uw_source']}",
-          f"Skylit source: {report['skylit_source']}", ""]
+          f"Skylit source: {report['skylit_source']}",
+          f"Rank field: {rank_label}", ""]
     for D, day in report["dates"].items():
         md.append(f"## {D}")
         md.append(f"- universes: UW n={day['universe']['uw_n']} · Skylit n={day['universe']['skylit_n']}")
         v1 = day["V1_spearman_uw_prem_vs_skylit_prem"]
         v1b = day["V1b_spearman_uw_score_vs_skylit_prem"]
         md.append(f"- V1 Spearman(UW premium proxy, Skylit total premium): rho={v1['rho']:.3f} (n={v1['n_common']})")
-        md.append(f"- V1b Spearman(UW score_v0, Skylit total premium): rho={v1b['rho']:.3f} (n={v1b['n_common']})")
-        md.append("- V2 score_v0 vs Skylit top-premium tickers (precision / recall / hits@n_truth):")
+        md.append(f"- V1b Spearman(UW {rank_label}, Skylit total premium): rho={v1b['rho']:.3f} (n={v1b['n_common']})")
+        md.append(f"- V2 {rank_label} vs Skylit top-premium tickers (precision / recall / hits@n_truth):")
         for r in day["V2_score_vs_top_premium"]:
             md.append(f"    - K={r['k']}: P={r['precision']:.2f} R={r['recall']:.2f} hits={r['hits']}/{r['n_truth']}")
         md.append("- V2 ceiling (UW premium-only rank vs same truth):")
         for r in day["V2_ceiling_uw_prem_only_vs_top_premium"]:
             md.append(f"    - K={r['k']}: P={r['precision']:.2f} R={r['recall']:.2f} hits={r['hits']}/{r['n_truth']}")
-        md.append(f"- V3 score_v0 vs unusual sets (truth n={day['V3_score_vs_unusual']['truth_n']}):")
+        md.append(f"- V3 {rank_label} vs unusual sets (truth n={day['V3_score_vs_unusual']['truth_n']}):")
         for r in day["V3_score_vs_unusual"]["rows"]:
             md.append(f"    - K={r['k']}: P={r['precision']:.2f} R={r['recall']:.2f} hits={r['hits']}/{r['n_truth']}")
-        md.append(f"- V4 score_v0 vs attention set (truth n={day['V4_score_vs_attention']['truth_n']}):")
+        md.append(f"- V4 {rank_label} vs attention set (truth n={day['V4_score_vs_attention']['truth_n']}):")
         for r in day["V4_score_vs_attention"]["rows"]:
             md.append(f"    - K={r['k']}: P={r['precision']:.2f} R={r['recall']:.2f} hits={r['hits']}/{r['n_truth']}")
         md.append("")
-    fn_md = os.path.join(E07, "validation_report.md")
+    fn_md = os.path.join(args.features_dir, args.out_stem + ".md")
     with open(fn_md, "w") as f:
         f.write("\n".join(md))
     print("\n".join(md))

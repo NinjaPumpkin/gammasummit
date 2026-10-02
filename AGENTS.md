@@ -74,6 +74,13 @@ missing layer = cross-expiry dynamic weighting (fit target = 1s range frames).
 - Raw UW retention 24–48h; never let raw tables grow unbounded.
 - Skylit API (`SKYLIT_API_KEY` in `.env`) is a **temporary RE tool** (sub ends
   ~Nov 2026); production must run UW-only.
+- **UW PHX is the ONLY production data source going forward (source of truth,
+  owner 2026-10-02)** — Skylit + leandata data = RE/reference/backtest
+  archives only, never production inputs.
+- **Rate limits are NEVER hit on any source** (Skylit API, leandata vendor,
+  UW PHX, app.skylit.ai web RE): pace ≤50% of documented limits with jitter,
+  exponential backoff + cooldown on any rate signal, daily request caps,
+  incident comment + pause. A rate-limit hit is a process failure.
 
 ## Where things live
 

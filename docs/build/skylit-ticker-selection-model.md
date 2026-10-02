@@ -141,6 +141,15 @@ gate(G1..G7)  ->  rank by day total premium (dollar-pinned, dedup contracts)
 | H5 | GEX concentration (peakAbsMean-analog from `/v1/stats/daily` semantics: mean of daily max\|cell\|) ranks Heatseeker attention for singles the same way it does for indices | UW `gamma_data_v2` cells vs `uw_hot_chains` membership | [observed]+[derived] |
 | H6 | Regime gate: in negative-gamma days the bar rises ("greater need for cross-index confirmation") → attention lists tilt defensive (TLT/HYG/XLF heavy on 09-29/30 unusual-oi — already visible) | classify days by GEX sign, compare B composition | [academy]+[derived] |
 
+**E0.8 results (2026-10-02)** `[derived, measured]` — full numbers:
+`docs/build/e08-h1h2-backtest.md`. H1: partially supported — RVOL half clears
+P@25 0.56–0.76 vs B on mature days of an uncensored 54-ticker track (P@50 0.52 on the
+one fully-mature day; K≈universe-size caveat), but at 610-ticker UW scale P@50 =
+0.26–0.38 (target 0.5 missed) because top_chains captures only 9–26 of 200 truth
+contracts/day and its per-row `prev_oi` is not a day-over-day OI snapshot (published
+oiChange ±15k–42k vs our row delta ±1–178). H2: not supported — surprise percentile ≈
+raw premium on the uncensored track and below it every day on the 610 track.
+
 ## 7. Data gaps on the UW side (honest)
 
 1. **Per-contract daily history is missing** — `top_chains` keeps only top-15
@@ -149,6 +158,13 @@ gate(G1..G7)  ->  rank by day total premium (dollar-pinned, dedup contracts)
    aggregates (volume, premium, oi, prev_oi, bid/ask split) for all captured
    tickers — the exact `ContractStats`/`UnderlyingStats` row shapes Skylit's own
    rollups use `[observed]`.
+   **REMEDIATED 2026-10-02 (E0.8):** `db/migrations/0002_contract_daily_stats.sql`
+   (contract_daily_stats + underlying_daily_stats) + daily collector
+   `scripts/e08_contract_daily_persist.py` (PHX full-chain rows → parquet +
+   insert-only upsert). History accumulates forward one session at a time — PHX
+   `chains_expiry` serves only the latest settled snapshot (`date` param is a
+   no-op), so no backfill; contract-level H1 becomes fully testable once ~15+
+   sessions accumulate.
 2. `flow_scores` covers only alert-driven names (34 tickers/day), 2026-09-11→09-30.
    Not a universe feed.
 3. `ticker_metrics` / `options_screener_snapshots` are stale (max 2026-06-03 /
