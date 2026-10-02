@@ -124,9 +124,10 @@ class TestMagGamma(unittest.TestCase):
 
     def test_value_path_untouched_for_explicit_weights(self):
         # the temper lives in the psi layer only: V = sum_e a_e * g with the
-        # caller's weights as given (E0.3 hand vector preserved)
+        # caller's weights as given (E0.3 hand vector preserved; p = 1.0 pins
+        # the g basis -- the E0.6 shape transform is tested in test_exposure)
         batch = exp.normalize_batch(grid_rows(), ts="2026-09-30T14:30:00+00:00", spot=105.0)
-        v = exp.node_values(batch, {"2026-10-15": 1.5, "2026-11-20": -2.0})
+        v = exp.node_values(batch, {"2026-10-15": 1.5, "2026-11-20": -2.0}, p=1.0)
         self.assertEqual(v[100], 5.0)
         self.assertEqual(v[110], -1.5)
 

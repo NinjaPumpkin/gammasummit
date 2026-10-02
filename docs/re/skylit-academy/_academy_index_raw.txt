@@ -1,0 +1,341 @@
+URL: https://app.skylit.ai/academy
+captured: 2026-10-02
+
+SKYLIT
+HOME
+DASHBOARD
+ALERTS
+PARTNERS
+LIVE STAGES
+1
+PORTAL
+SUPPORT TICKETS
+../
+ACADEMY
+PRODUCTS
+DEVELOPER
+HEATSEEKER
+HEATMAPS
+ATLAS
+NODE ALERTS
+TEMPEST
+TRINITY MODE
+ATLAS
+ATLAS
+TALON
+TALON
+FLOWSEEKER
+LIVE FEED
+DARK FEED
+FLOW SCANNER
+FLOW COMPASS
+CONTRACT LOOKUP
+COMPANY EVENTS
+FLOW TRACKER
+FLOW ALERTS
+NEXUS
+LEADERBOARD
+MY PROFILE
+TRADES
+IDEAS
+NEW TRADE
+SETTINGS
+lapcheong
+LIVE
+Live analysis - Good Morning · 426 watching
+Join stage
+SKYLIT / EDUCATION
+Your edge starts here.
+
+Explore the tools. Build your understanding. Earn your certification.
+
+Skylit Academy
+01 / CHOOSE YOUR TRACK
+Selected
+Trinity heatmap · Product example
+Heatseeker
+Read the gamma map — nodes, regimes, and where price is pulled.
+16 courses
+0 / 13 certified
+Options flow feed · Product example
+Flowseeker
+Read the tape — prints, sweeps, and what the size is saying.
+10 courses
+0 / 10 certified
+Talon · Prompt guides & platform workflows
+Talon
+Ask better questions. Learn where to use Talon and how to give it useful context.
+Coming soon
+Atlas chart overlays · Product example
+Features
+Every tool in the platform, and what each one is for.
+Coming soon
+
+02 / EXPLORE THE CURRICULUM
+
+Heatseeker
+6 tiers · 16 courses
+01
+Skylit - Knowing Your Ecosystem
+3 courses
+02
+Baby Wick
+3 courses
+03
+Initiate
+3 courses
+04
+Quant
+3 courses
+05
+Oracle
+3 courses
+06
+Phenom
+1 course
+📖
+
+TIER 01
+
+Skylit - Knowing Your Ecosystem
+
+Learn how to read institutional options flow, use filters and scores, and identify trades with structural edge. Discover Dark Pool levels as well as Atlas.
+
+3 courses
+· 25 sections
+Your certifications
+0 / 1
+🔮
+01
+Reading The Dark Pool Prints
+
+Beginner
+6 sections
+80% to pass
+12512 views
+895 completions
+📈
+02
+Atlas
+Reference · no quiz
+
+Discover the power of Atlas Charting Integration as you explore how to unlock its fullest potential.
+
+Beginner
+10 sections
+8204 views
+0 completions
+🦅
+03
+Talon Prompt Guide
+Reference · no quiz
+
+What to ask Talon, where to ask it, and the small habits that turn a thin answer into a useful one. A reference you can keep open beside the terminal — every example maps to something Talon can do today.
+
+Beginner
+9 sections
+1536 views
+0 completions
+👶
+
+TIER 02
+
+Baby Wick
+
+Tier 1 - Foundations of chart reading and market structure
+
+3 courses
+· 23 sections
+Your certifications
+0 / 3
+📊
+01
+Charts First: Market Structure Before Exposure
+
+Skylit Academy Chapter 1
+
+Beginner
+6 sections
+80% to pass
+17666 views
+1533 completions
+⚡
+02
+Dealer Positioning and Gamma Mechanics
+
+Skylit Academy Chapter 2
+
+Beginner
+7 sections
+80% to pass
+13409 views
+1490 completions
+🔑
+03
+Node Hierarchy
+
+Skylit Academy Chapter 3
+
+Beginner
+10 sections
+80% to pass
+12925 views
+1456 completions
+🔥
+
+TIER 03
+
+Initiate
+
+Tier 2 - Gamma awareness, pattern recognition, and execution
+
+3 courses
+· 34 sections
+Your certifications
+0 / 3
+🎯
+01
+Gamma Regime Awareness and Day Forecasting
+
+Skylit Academy Chapter 4
+
+Beginner
+10 sections
+80% to pass
+17441 views
+1239 completions
+🧩
+02
+Heatseeker Pattern Recognition
+
+Skylit Academy Chapter 5
+
+Beginner
+8 sections
+80% to pass
+13478 views
+1134 completions
+⚔️
+03
+Execution Models: Trading the Deflection
+
+Skylit Academy Chapter 6
+
+Beginner
+16 sections
+80% to pass
+12101 views
+989 completions
+📈
+
+TIER 04
+
+Quant
+
+Tier 3 - Advanced interpretation of rolling structure and velocity
+
+3 courses
+· 30 sections
+Your certifications
+0 / 3
+🔄
+01
+Rolling Floors and Ceilings
+
+Skylit Academy Chapter 7
+
+Intermediate
+8 sections
+80% to pass
+8419 views
+926 completions
+💨
+02
+Air Pockets, Liquidity Vacuums, and Velocity Mode
+
+Skylit Academy Chapter 8
+
+Intermediate
+11 sections
+80% to pass
+8027 views
+853 completions
+🔬
+03
+Node Lifecycle, Delivery, and Target Validity
+
+Skylit Academy Chapter 9
+
+Intermediate
+11 sections
+80% to pass
+6251 views
+802 completions
+🏛️
+
+TIER 05
+
+Oracle
+
+Tier 4 - Cross-index confluence and real-time integration
+
+3 courses
+· 24 sections
+Your certifications
+0 / 2
+🌐
+01
+Cross-Index Confluence
+
+Skylit Academy Chapter 10
+
+Advanced
+14 sections
+80% to pass
+7023 views
+772 completions
+🧠
+02
+Tying It All Together
+
+Skylit Academy Chapter 11
+
+Advanced
+7 sections
+80% to pass
+7823 views
+714 completions
+🎓
+03
+Practicum
+Reference · no quiz
+
+Skylit Academy Chapter 12
+
+Advanced
+3 sections
+5431 views
+0 completions
+🏆
+
+TIER 06
+
+Phenom
+
+Tier 5 - Comprehensive final examination
+
+1 course
+· 1 sections
+Your certifications
+0 / 1
+🏆
+01
+Final Examination
+
+Skylit Academy Chapter final
+
+Advanced
+1 sections
+80% to pass
+6367 views
+694 completions
