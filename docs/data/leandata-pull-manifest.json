@@ -1,0 +1,59 @@
+{
+ "date": "2026-10-02",
+ "cap": 20000,
+ "requests": 20000,
+ "by_endpoint": {
+  "/v1/history/bars": 16665,
+  "/v1/options/contracts": 791,
+  "/v1/options/eod": 2544
+ },
+ "incidents": [
+  {
+   "ts": "2026-10-02T22:38:13.895288",
+   "kind": "daily_cap",
+   "detail": "daily request cap reached \u2014 stopping run"
+  },
+  {
+   "ts": "2026-10-02T23:09:08.557119",
+   "kind": "daily_cap",
+   "detail": "daily request cap reached \u2014 stopping run"
+  }
+ ],
+ "jobs": {
+  "stock_daily": {
+   "started_at": "2026-10-02T10:26:07.310301",
+   "finished_at": "2026-10-02T10:26:07.311076",
+   "requests_so_far": 0
+  },
+  "stock_1min": {
+   "started_at": "2026-10-02T17:07:36.123329",
+   "finished_at": "2026-10-02T10:14:48.846362",
+   "requests_so_far": 0
+  },
+  "options_eod": {
+   "started_at": "2026-10-02T23:09:08.555645",
+   "finished_at": "2026-10-02T17:07:36.118158",
+   "requests_so_far": 3285
+  },
+  "options_minute": {
+   "started_at": "2026-10-02T17:07:36.119436",
+   "finished_at": "2026-10-02T17:07:36.123038",
+   "requests_so_far": 3285
+  },
+  "_aborted": {
+   "reason": "daily request cap reached",
+   "at": "2026-10-02T23:09:08.557430"
+  }
+ },
+ "started_at": "2026-10-02T09:59:28.949215",
+ "policy": {
+  "max_inflight": 1,
+  "documented_concurrency_cap": 3,
+  "min_interval_s": 1.0,
+  "jitter_max_s": 0.5,
+  "daily_cap": 20000,
+  "cooldown_s": "300.0..1800.0 exp on rate signal",
+  "abort_on": "second 429/403 rate signal, or daily cap"
+ },
+ "updated_at": "2026-10-02T23:09:08.557718"
+}

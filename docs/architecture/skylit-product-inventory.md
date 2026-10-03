@@ -9,8 +9,10 @@ UW lifetime stack**. Inclusion decisions below. Names are ours.
 | Skylit module | What it is | GammaSummit | Phase | Source for us |
 |---|---|---|---|---|
 | Heatseeker | strike×expiry exposure heatmap + nodes | ✅ core (parity target) | P0/P4 | UW chains (gex/vanna) |
+| Heatmap replay | time-step replay of the heatmap (1m / 5m / … steps) — scrub history frame-by-frame | ✅ Heatmap replay (new, owner 2026-10-02) | P4 | our snapshots (accrue from day 1 — replay is only as good as our stored frames) |
+| Node alerts | filterable node alerts (criteria: node tier / strike / ticker / change) | ✅ Node alerts + filtering (new, owner 2026-10-02 — "can come up with right now") | P4 | our node classification + alert rules |
 | Flowseeker | live flow feed + scoring + scanners | ✅ Flow module | P4 | UW flow + `flow_scores`/outcomes |
-| Atlas | chart workspace + levels overlay | ✅ Chart module | P4 | leandata + our levels |
+| Atlas | chart workspace + heatmap overlay on chart, works for ALL tickers | ✅ Chart module | P4 | leandata + our levels |
 | Tempest | volatility intelligence (SVX, cones, sigma, skew, tilt, earnings, VRP) | ✅ **Vol module (new — owner pick)** | P2 calc / P4 UI | UW chains IV + leandata realized |
 | Talon | AI analyst | ✅ AI Analyst | P4 | our doctrine doc |
 | Nexus | $100K paper wallet + leaderboard | 📋 v2 (gamification) | v2 | own |

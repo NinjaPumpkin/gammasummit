@@ -33,9 +33,12 @@ gammasummit/
 │   │   ├── chain_writer.py gamma/vanna snapshot writer (batched upserts, idempotent)
 │   │   ├── flow_writer.py  flow prints + alerts · spot_writer.py
 │   │   └── fleet.py        top-200 live vs tail lazy/EOD scheduler
-│   ├── jobs/               scheduled work (single-scheduler rule: backend timers XOR pg_cron)
-│   │   ├── rollups.py      T0→T1 5-min buckets→T2 rollups · retention.py (export-first!)
-│   │   ├── export_cold.py  Parquet→X10 + rclone→R2 + manifest · freshness.py (verdict alarms)
+│   ├── jobs/               scheduled work (single-scheduler rule: backend timers XOR pg_cron — ADR 0007)
+│   │   ├── rollups.py      T0→T1 5-min buckets (downsampler) + T1→T2 hourly/EOD rollups
+│   │   ├── export_cold.py  T1/T2→T3 Parquet→X10 + rclone→R2 + manifest-verified drop
+│   │   ├── retention.py    T0 export-first retention (24–48h) · backfill.py (pgmq worker)
+│   │   ├── scheduler.py    THE single scheduler (backend timers, advisory-locked, audit-logged)
+│   │   ├── freshness.py    freshness metric per table/tier + Uptime Kuma push beacon (E2.4)
 │   │   └── outcomes.py     outcome marking + threshold recalibration
 │   └── tests/              unit/ (core), contract/ (schema sync), integration/ (API+DB)
 ├── db/

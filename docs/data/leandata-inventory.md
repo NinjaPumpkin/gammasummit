@@ -12,6 +12,15 @@ files fail footer reads and are junk, see Gotchas). Extraction was still
 touching the tree that morning (`parquet/` dir mtime 2026-10-01 09:49), so
 counts below are a snapshot, not a ceiling.
 
+**2026-10-02 update (D3, `scripts/leandata_extract.py`):** extraction resumed
+under a mandated throttle and is closing the t012 coverage gaps into a LOCAL
+staging archive (see "Extraction pipeline" below); the X10 drive had a
+device-level hang 2026-10-02 08:47–~11:20 (root cause of the two crashed
+extractor runs) and recovered after eject/remount — `scripts/leandata_x10_merge.py`
+merges staging → X10 when healthy. Live coverage is tracked in
+`../../data/leandata-coverage-report.json` (staging) + `leandata-pull-manifest.json`
+(requests/caps/incidents).
+
 Why it matters (from `../architecture/skylit-product-inventory.md`): "leandata
 realized" (Tempest realized vol), "leandata history" (IV rank baseline), "leandata
 + our levels" (Atlas charts), and E0.6 accumulation-history features all assume
@@ -119,25 +128,143 @@ Do NOT treat as a complete EOD history yet; re-inventory when extraction stops.
 | .phx_insider_trades.csv.gz.offset-era-partial | — | 3.9 GB partial-era artifact |
 | .export_done.json / .shrink_gate.json | — | provenance: verified_at 2026-09-29T02:46:25Z, phx_cutoff 2026-08-30T02:46:25Z, live-vs-gz candidate counts matched (426,302 / 470,293 / 471,854) |
 
-## Extraction provenance
+## Extraction provenance (RESOLVED 2026-10-02)
 
 - `parquet/.backfill_state.json` = extractor's checkpoint ledger: keys
   `<dataset>/<ticker>/<start>/<end>` (options_eod adds `<expiry>/<strike>`),
   value `true` when that window landed. Read it to check what's complete.
+  `skipped: ...` = permanent skip; `error: ...` = retryable.
 - Lock files (`*.parquet.lock`) = per-file extraction locks; empty.
-- **Vendor/API: NOT recorded anywhere on disk** (no scripts, README, or logs
-  live in or near the tree). Schema fingerprint HYPOTHESIS (unconfirmed):
-  `o/h/l/c/v/n/vw` aggregates with ISO `t` strings strongly resemble
-  Polygon.io-style bars, and `occ` symbology + `fetched_at` suggests a pull
-  from an options data API — treat as a lead, not fact, until the owner names
-  the vendor. No credentials needed for reading the local store; if a
-  vendor API is later onboarded, keys go in `GAMMASUMMIT_*` env vars only.
+- **Vendor: `https://api.leandata.uk` ("Leandata" IS the vendor — the
+  Polygon-style fingerprint below was a red herring; Leandata proxies Alpaca,
+  responses carry `x-upstream-provider: alpaca`, paid tier).** Auth:
+  `LEANDATA_TOKEN` bearer — value lives ONLY in an untracked `.env.local`
+  (`SignalForge/dashboard-next/.env.local`) and is read at runtime; never in
+  git/chat. Full API reference (endpoints, quirks, batching, rate behavior):
+  `market-data-pipelines/references/leandata-api.md` (Hermes skills).
+- **Extractor suite (the code that wrote this tree):** `scripts/leandata_*.py`
+  in the **SignalForge repo** (`leandata_backfill.py` main writer +
+  `leandata_options_minute.py`, `leandata_options_sweep.py`,
+  `leandata_index_extras.py`, `leandata_daily_snapshot.py`). Run read-only;
+  the D3 resume wraps them via importlib from
+  `gammasummit/scripts/leandata_extract.py` (no SignalForge file modified,
+  state-key shapes and parquet writer reused verbatim → byte-compatible
+  archives).
+- Rate behavior (measured, see leandata-api.md): the binding cap is
+  per-user CONCURRENCY = 3 account-wide (no rpm published); `429
+  historical_concurrency_limit` beyond that.
 
 ## Disk vs payload (matters for cold-tier sync)
 
 `du` reports 154G total but that is exFAT allocation (~1 MB clusters): true
 logical payload ≈ 7 GB parquet + 13 GB supabase_archive. Parquet footers
 report real sizes. Plan rclone/tiering budgets on logical sizes.
+
+## t012 universe (reconstructed 2026-10-02)
+
+`t012_tickers.txt` (560 names, one comma-separated line, ordered T0,T1,T2)
+lived ONLY on X10. Reconstructed from the Supabase `ticker_universe` tier
+table (T0=4, T1=50, T2=506 → 560 ✓) and validated against the 2026-10-01
+coverage scan: T0+T1 is set-equal to the known 54 options_minute roots ✓, and
+the reconstructed missing sets reproduce the D3 gap counts exactly
+(stock_daily 38 / stock_1min 128 / options_minute 506 / options_eod 558) ✓.
+Durable copies: `../../data/t012_tickers.txt` (same one-line format) and
+`../../data/t012_universe.json` (names + tiers). Within-tier order is by
+`activity_score` desc — the original file's within-tier order is unknown
+(cosmetic: only the T0+T1 vs T2 split is load-bearing).
+
+## Extraction pipeline (2026-10-02, D3 resume)
+
+- Driver: `../../scripts/leandata_extract.py` — wraps the proven SignalForge
+  extractor suite (importlib, read-only) with the owner/PM-mandated throttle:
+  * **1 in-flight request** (≤50% of the documented account-wide concurrency
+    cap of 3) + ≥1.0 s + U(0, 0.5) s jitter between request starts (no rpm
+    cap is published — conservative self-imposed spacing);
+  * rate signal (429/403/rate-ish body) → exponential cooldown 300→1800 s,
+    retry ONCE, **abort the run on the second signal** (stop-on-first-sign,
+    never a retry-storm; the vendor scripts' 5×429-retry default is
+    overridden); `invalid_token*` never retried;
+  * **daily request cap 20,000** (env `LEANDATA_DAILY_CAP`) enforced from
+    `leandata-pull-manifest.json`, which counts every request per endpoint
+    per day and records incidents — the counter survives restarts;
+  * single-instance flock (`.extract.lock`) — two drivers would break the
+    ≤50% rule, so a second instance exits.
+- Continuation daemon: Hermes cron `leandata-extract-daemon`
+  (`23ba92d6e28f`, script-only, every 4 h) runs
+  `../../scripts/leandata_daemon_tick.sh`: merge staging → X10 when the
+  drive answers, re-derive gap lists, relaunch the driver if idle. When
+  coverage is complete the driver is a cheap no-op (state skips).
+- Job order: stock_daily gaps → stock_1min gaps (2-symbol monthly batches) →
+  options_eod breadth baseline → options_minute T2 grind (8-OCC batches,
+  `--max-batches-per-root 12` breadth-first; later passes deepen).
+- The 2-symbol batching for stock bars and 8-OCC batching for option minute
+  bars are load-bearing (3+ symbols silently collapse to 1000-row paginated
+  mode; see leandata-api.md quirks).
+
+## Coverage gaps & honest budgets (as of 2026-10-02)
+
+**Checkpoint 2026-10-02 ~13:45 PT** (staging `../../data/leandata-parquet`,
+full machine-readable snapshot `../../data/leandata-coverage-report.json`):
+
+| dataset | staging tickers | files | rows | status |
+|---|---|---|---|---|
+| stock_daily | 35 | 362 | 88,164 | **38-gap CLOSED** (38/38 terminal state keys) |
+| stock_1min | 2 | 8 | 976,907 | grinding (PCG/TQQQ partial; 126 names queued) |
+| options_eod | 10 | 10 | 1,694 | breadth baseline in progress (9 roots done @ ~75 s/root) |
+| options_minute | 0 | 0 | 0 | queued (card-priority order: breadth first) |
+
+Requests today 1,650 · 0 rate signals · 0 incidents (manifest).
+
+Gap lists are regenerated from the live X10 tree into `data/missing_<ds>.txt`
+by `leandata_x10_merge.py --derive-only` (authoritative). What is achievable
+at ≤50%-of-limit pacing (~1 call / 1.3 s ≈ 2700 calls/h, 20k/day cap):
+
+| work | calls | verdict |
+|---|---|---|
+| stock_daily 38 gaps | ~110 (paginated) | **done in staging 2026-10-02** (35 fetched, 2 index-routed, 1 vendor `archive_miss` = RUTW) |
+| stock_1min 128 gaps | **~1e5 pages, not ~5.2k** — the 2-symbol batch still paginates at ~1000 rows/page for liquid pairs (measured ~30 pages per pair-month, e.g. PCG+TQQQ), so 64 pairs × 81 months × ~30 pages ≈ 1.5e5 | **multi-day at the 20k/day cap** (≈5–8 days) — daemon-owned, measured not estimated |
+| options_eod breadth baseline (558 roots × 1 monthly expiry × 7 strikes × 1 ≤21d chunk + spot/chain discovery) | ~5k | feasible within ~1 day of budget |
+| options_eod DEPTH (full strike bands × all expiries × history) | ~1e6+ | **NOT attempted** — months of wall-clock at compliant pacing; documented, not fabricated |
+| options_minute T2 (506 roots, nearest-2 expiries, full tape per contract) | ~13k+ (page counts to be measured as it runs) | multi-day at cap; daemon grinds it |
+
+Call-page reality (measured 2026-10-02): `/v1/history/bars` pages at ~1000
+rows and the 2-symbol "full month in one response" quirk does NOT hold for
+all pairs — budget at page level, never at window level.
+
+**Progress checkpoint 2026-10-02 ~11:55 PT** (D3b verification pass):
+
+- **X10 merge EXECUTED 11:47 PT** (pgrep-gated: extractor idle): 409 files
+  copied staging→X10, 424 state-ledger keys unioned. Row-dedup verified on
+  22 sample parquet footers before/after — identical row counts (only diff =
+  output line ordering). Post-merge derive vs t012: `stock_daily` 38→**3**,
+  `stock_1min` 128→**126**, `options_eod` 558→**519**, `options_minute` 506.
+- Residual `stock_daily` 3 = **SPX, VIX** (index roots — real data lives in
+  `index_daily`) + **RUTW** (vendor `archive_miss`): 38/38 terminal state
+  keys, unbackfillable in `stock_daily` by definition. Honest remainder.
+- **Depth-integrity patch** (`scripts/leandata_extract.py`, throttle
+  UNCHANGED per owner hard rule):
+  1. grind-list guard — tickers the pipeline started but has not finished
+     stay on the grind list even after a merge makes them 'present' in X10
+     (the merge-time re-derived gap lists are breadth-based and previously
+     truncated in-progress depth silently). Proven live at relaunch:
+     `grind-list stock_1min: +2 in-progress tickers kept`,
+     `grind-list options_eod: +1 in-progress tickers kept`.
+  2. stock_1min breadth anchors (2026-06, 2025-06, 2024-06 month windows,
+     exact `months()` key shapes) land one month per ticker BEFORE the full
+     depth pass — so X10 ticker-presence (the `missing → 0` metric) closes
+     within the first ~2k calls of the stock_1min job instead of after all
+     64 pairs' full 81-month depth (~1.5e5 pages).
+  Offline verification: 13/13 guard cases + anchor⊂depth key-set equality.
+  Residual risk (accepted, documented): a ticker hard-killed mid-window
+  before any state key is written can lose tail months once merged — ~1
+  ticker-window per hard kill, tracked via the state ledger.
+
+The full-history options_eod sweep (the `leandata_options_sweep.py` shape:
+every weekday × ±8 strikes × 3 chunks per root) is the known unreachable
+item: it is call-volume-bound, not quota-blocked. The breadth baseline gives
+every t012 root a real EOD window now; depth accrues via the daemon and any
+future budget increase (a documented vendor concurrency raise would change
+this table).
 
 ## Gotchas
 

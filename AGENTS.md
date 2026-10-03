@@ -99,3 +99,7 @@ missing layer = cross-expiry dynamic weighting (fit target = 1s range frames).
 Feature done = tests pass + lints clean + acceptance column met + documented
 in the right folder. Never declare done on plausible output — verify with real
 runs.
+
+## Org rulebook
+- Company structure, model tier ladder (T0 OpenJev -> T1 LiquidAI local -> T2 mimo -> T3 gated), harness policy (Multica frozen), reporting SLAs: `../docs/ops/AGENCY_ORG.md` (ADR 0006)
+- Trading doctrine for any trading work: SignalForge `docs/TRADING_DOCTRINE.md` (per ADR 0005)

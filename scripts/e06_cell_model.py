@@ -679,7 +679,8 @@ def cmd_eval(execute: bool, group: str = "all") -> int:
     else:
         print("WARNING: no cell_theta.json / group -- baseline g only")
 
-    models = ["g_baseline"] + ([f"theta_{group}"] if theta is not None else [])
+    models = ["g_baseline", "power_p125"] + (
+        [f"theta_{group}"] if theta is not None else [])
     stats = {m: {"n": 0, "exact": 0, "tol": 0, "top6": 0, "apes": [],
                  "oracle_free_exact": 0, "oracle_joint_exact": 0,
                  "oracle_free_tol": 0, "oracle_joint_tol": 0}
@@ -724,7 +725,13 @@ def cmd_eval(execute: bool, group: str = "all") -> int:
         for row in batch_rows:
             g_cols[row["expiry_date"]][row["strike"]] += exp.net_gex(row)
 
-        h_models = {"g_baseline": dict(g_cols)}
+        # power class (E0.6, cell-model doc §5b): within-column shape transform
+        # h = m_e * sgn(g) * |g/m_e|^p via exposure.shape_column (MAG_SHAPE_P) --
+        # single source of truth with backend/core/exposure.py; column magnitude
+        # kept g-scale so the psi weights are untouched
+        p_cols = {e: exp.shape_column(cm) for e, cm in g_cols.items()}
+
+        h_models = {"g_baseline": dict(g_cols), "power_p125": dict(p_cols)}
         if theta is not None:
             cols = [FEAT_INDEX[f] for f in sel]
             Xs = (M.feats[start:end][:, cols].astype(np.float64) - means) / norms
@@ -833,7 +840,7 @@ def cmd_verify() -> int:
                         bad.append((p, token))
     print("import-scan issues:", bad or "none")
     ok = not bad
-    for fn in ("feature_cos2.json", "cell_theta.json", "eval_models_all.json"):
+    for fn in ("feature_cos2.json", "calibration/analysis.json"):
         p = os.path.join(OUT_DIR, fn)
         ex = os.path.exists(p)
         print(f"artifact {fn}: {'OK' if ex else 'MISSING'}")
