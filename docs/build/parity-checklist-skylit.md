@@ -43,7 +43,7 @@ Legend: ✅ in demo v3 · 📝 spec'd, builds in phase 4 · 🔍 needs deeper se
 | 17 | Strike × expiry matrix, 18px rows, sticky strike col | core layout | ✅ |
 | 18 | Cell color system: fill + brightness + cutoff 128 ink flip (light/dark text) | legibility on heat | ✅ (luminance flip) |
 | 19 | 7 palettes (Viridis default, Cividis, Inferno, Magma, Plasma, Turbo, Grayscale — matplotlib stops) | theme picker | ✅ functional |
-| 20 | Asymmetric normalization (pos ≈ .5+.5·r^1.5, neg ≈ .5−.5·|r|^.85, intensity floor) | color mapping | ✅ approx — constants 📝 fit from live pairs |
+| 20 | Asymmetric normalization (pos ≈ .5+.5·r^1.5, neg ≈ .5−.5·|r|^.85, intensity floor) | color mapping | ✅ SPEC DONE — see `docs/build/heatmap-formula-handoff.md` (constants are OUR design within measured anchors; Skylit's own constants proven UN-FITTABLE: colors independent of $ labels, Spearman 0.037, n=7,893) |
 | 21 | **Velocity chip bubble** in-cell (`-5%` = change over selected window) | live Δ% | ✅ |
 | 22 | **Cell pulse on big change: green = increasing, red = decreasing** (`velocity-pulse` scale 1.02/opacity .6→1 1.8s + `velocity-ring` border 1→2px 2s) | intraday alerting | ✅ |
 | 23 | Row highlight flash (`highlight-pulse` 2s) on row events | event cue | 📝 wire to alerts |

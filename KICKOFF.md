@@ -21,7 +21,11 @@ with `/botmode` + `/kanban` + subagents + bot profiles, and where the specs are.
 - Hard rules (violating = wrong): clean-room calcs (no SignalForge code copies);
   `--dry-run` default for destructive ops; frontend → API only (no DB keys in
   browser); secrets never in git/chat; never write to SignalForge prod;
-  Skylit API = temporary RE tool (sub ends ~Nov 2026), production runs UW-only.
+  Skylit API = temporary RE tool (sub ends ~Nov 2026), production runs UW-only;
+  **UW PHX is the ONLY production data source going forward (source of truth) —
+  Skylit + leandata = RE/reference/backtest archives only** (owner 2026-10-02);
+  **rate limits are NEVER hit on any source** (≤50%-of-limit pacing with jitter,
+  backoff + cooldown on any rate signal, daily caps, incident comment + pause).
 
 ## 1. Bot profiles (the team)
 

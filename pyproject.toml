@@ -18,6 +18,7 @@ dependencies = [
     "asyncpg>=0.29",
     "pydantic>=2.6",
     "pydantic-settings>=2.2",
+    "pyarrow>=14",  # T3 Parquet export (jobs/retention.py, export_cold.py)
 ]
 
 [project.optional-dependencies]
