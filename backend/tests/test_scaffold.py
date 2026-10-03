@@ -7,7 +7,6 @@ verbatim copy of docs/build/README.md (the builder guide).
 from __future__ import annotations
 
 import os
-import re
 import unittest
 
 from fastapi.testclient import TestClient
@@ -73,7 +72,10 @@ class ManifestAcceptanceTest(unittest.TestCase):
         self.assertTrue(lines, ".env.example has no keys")
         for ln in lines:
             self.assertRegex(ln, r"^GAMMASUMMIT_[A-Z0-9_]+=$", f"non-placeholder line: {ln!r}")
-            self.assertFalse(re.search(r"[A-Za-z0-9]{8,}=$", ln), f"value present: {ln!r}")
+            # NOTE: no extra "value present" heuristic here — the regex above
+            # already pins the line to KEY= with an empty value, and any
+            # [A-Za-z0-9]{8,}=$ heuristic false-positives on long key-name
+            # suffixes (e.g. ..._MAX_EXPIRIES=).
 
     def test_agents_md_is_builder_guide_copy(self):
         with open(os.path.join(REPO, "AGENTS.md"), encoding="utf-8") as fh:

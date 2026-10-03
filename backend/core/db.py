@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import asyncio
 import random
+import re
+from collections.abc import Mapping, Sequence
 from typing import Any, Awaitable, Callable, Optional, TypeVar
 
 import asyncpg
@@ -122,6 +124,15 @@ class Database:
             raise DatabaseUnavailableError("pool not connected — call connect() first")
         return self._pool
 
+    def session(self) -> Any:
+        """Dedicated checked-out connection as an async context manager.
+
+        For session-level state that must survive across queries on the SAME
+        connection (advisory locks in jobs/scheduler.py). Job queries still go
+        through the pool; only the lock holder rides this connection.
+        """
+        return self._acquire().acquire()
+
     async def _run(self, method: str, query: str, args: tuple[Any, ...]) -> Any:
         """One query path: transient retry inside, typed errors out.
 
@@ -152,6 +163,11 @@ class Database:
     async def execute(self, query: str, *args: Any) -> str:
         return await self._run("execute", query, args)
 
+    async def executemany(self, query: str, args_seq: list[tuple[Any, ...]]) -> str:
+        """Batch statement path (T0 batch-upsert writer). Same transient retry
+        as `execute`; safe to re-run because callers write idempotent upserts."""
+        return await self._run("executemany", query, (args_seq,))
+
     async def ping(self) -> bool:
         """Readiness probe — never raises; readyz contract."""
         try:
@@ -159,3 +175,77 @@ class Database:
             return val == 1
         except (DatabaseError, QueryError):
             return False
+
+
+# ---------------------------------------------------------------------------
+# Batch-upsert helper (reuse map, docs/ops/migration-from-signalforge.md:
+# "lib/supabase_writer.py batch upsert + retry + stats — re-implement in
+# backend/core/db.py; keep conflict-key upsert semantics"). Clean-room: the
+# pattern is re-derived here, nothing is copied.
+# ---------------------------------------------------------------------------
+
+UPSERT_CHUNK_ROWS = 500
+_IDENT_RE = re.compile(r"^[a-z_][a-z0-9_]*$")
+
+T0_UPSERT_TABLES = ("gamma_snapshot", "spot_tick", "flow_print", "darkpool_print")
+
+
+def _ident(name: str, kind: str) -> str:
+    """Table/column names are code constants, never user input — assert that
+    loudly so a future caller cannot smuggle SQL through a name."""
+    if not _IDENT_RE.match(name):
+        raise QueryError(f"unsafe {kind} name", detail=name)
+    return name
+
+
+def upsert_sql(table: str, columns: Sequence[str], conflict_cols: Sequence[str]) -> str:
+    """Conflict-key upsert: INSERT ... ON CONFLICT (keys) DO UPDATE SET rest.
+
+    Idempotent by construction — re-running a batch overwrites identical rows
+    instead of duplicating them, so a retried writer is always safe.
+    """
+    table = _ident(table, "table")
+    cols = [_ident(c, "column") for c in columns]
+    keys = [_ident(c, "column") for c in conflict_cols]
+    if not cols or not keys:
+        raise QueryError("upsert needs columns and conflict keys")
+    missing = [k for k in keys if k not in cols]
+    if missing:
+        raise QueryError("conflict keys missing from columns", detail=str(missing))
+    updates = [c for c in cols if c not in keys]
+    set_clause = ", ".join(f"{c} = EXCLUDED.{c}" for c in updates) or ", ".join(
+        f"{k} = EXCLUDED.{k}" for k in keys
+    )
+    return (
+        f"INSERT INTO {table} ({', '.join(cols)}) "
+        f"VALUES ({', '.join(f'${i + 1}' for i in range(len(cols)))}) "
+        f"ON CONFLICT ({', '.join(keys)}) DO UPDATE SET {set_clause}"
+    )
+
+
+async def upsert_rows(
+    db: Database,
+    table: str,
+    rows: Sequence[Mapping[str, Any]],
+    conflict_cols: Sequence[str],
+    *,
+    chunk: int = UPSERT_CHUNK_ROWS,
+) -> int:
+    """Write homogeneous row dicts in chunks. Returns row count written.
+
+    Homogeneous = every row has the same keys (the writers guarantee it);
+    the column order comes from the first row and drives every chunk.
+    """
+    if not rows:
+        return 0
+    columns = list(rows[0].keys())
+    for r in rows:
+        if set(r.keys()) != set(columns):
+            raise QueryError("rows are not homogeneous", detail=table)
+    sql = upsert_sql(table, columns, conflict_cols)
+    args = [tuple(r[c] for c in columns) for r in rows]
+    written = 0
+    for i in range(0, len(args), chunk):
+        await db.executemany(sql, args[i : i + chunk])
+        written += len(args[i : i + chunk])
+    return written
